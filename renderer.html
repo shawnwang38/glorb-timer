@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
   <meta name="viewport" content="width=220, initial-scale=1.0">
-  <title>Glorb</title>
+  <title>Glorb Timer</title>
   <link rel="stylesheet" href="renderer.css">
 </head>
 <body>
   <div id="app">
     <!-- Close button (× — D-03, D-04) -->
-    <button id="btn-close" title="Quit Glorb">&times;</button>
+    <button id="btn-close" title="Quit Glorb Timer">&times;</button>
 
     <!-- Quit confirmation overlay (D-04) -->
     <div id="quit-overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-heading">
-      <h2 id="overlay-heading">Quit Glorb?</h2>
+      <h2 id="overlay-heading">Quit Glorb Timer?</h2>
       <p>This will close the app, not just hide the window.</p>
       <div class="overlay-buttons">
-        <button id="btn-quit">Quit Glorb</button>
+        <button id="btn-quit">Quit Glorb Timer</button>
         <button id="btn-keep">Keep Running</button>
       </div>
     </div>
@@ -117,7 +117,7 @@
     <div id="settings-panel" aria-label="Settings">
       <!-- Focus summary -->
       <div id="focus-summary">
-        <p id="focus-message">Hi <span id="user-name" class="orange" title="Click to edit name">Ouen</span><input id="name-input" type="text" maxlength="30" autocomplete="off" spellcheck="false">,<br>you've focused for <span class="orange" id="focus-time">00h 00m</span> with Glorb.</p>
+        <p id="focus-message">Hi <span id="user-name" class="orange" title="Click to edit name">Ouen</span><input id="name-input" type="text" maxlength="30" autocomplete="off" spellcheck="false">,<br>you've focused for <span class="orange" id="focus-time">00h 00m</span> with Glorb Timer.</p>
       </div>
 
       <!-- Strength selector -->
@@ -203,7 +203,7 @@
       remaining = getTotalSeconds() - elapsed
       if (remaining <= 0) {
         remaining = 0
-        window.glorb.notify('Glorb', 'Focus session complete.')
+        window.glorb.notify('Glorb Timer', 'Focus session complete.')
         updateRing(0)
         timeDisplay.innerHTML = formatTime(0)
         addFocusTime(getTotalSeconds())

@@ -1,15 +1,50 @@
 {
   "name": "glorb-timer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "macOS menu bar Pomodoro timer (software-only)",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --mac dmg"
   },
   "devDependencies": {
-    "electron": "^29.0.0"
+    "electron": "^29.0.0",
+    "electron-builder": "^26.8.1"
   },
   "dependencies": {
     "electron-store": "^8.2.0"
+  },
+  "build": {
+    "appId": "com.shawnwang38.glorb-timer",
+    "productName": "Glorb Timer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.html",
+      "renderer.css",
+      "onboarding.html",
+      "onboarding.css",
+      "glorb_icon.png",
+      "build-icon.png",
+      "glorb_light.png",
+      "glorb_dark.png",
+      "glorb.png"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        { "target": "dmg", "arch": ["arm64"] }
+      ],
+      "icon": "build-icon.png",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "writeUpdateInfo": false
+    }
   }
 }

@@ -89,7 +89,7 @@ function weakTerminate (message) {
 function runWeakRegular () {
   // Step 1 — 30s: push "Stay focused!" + 1 chime
   trackTimeout(() => {
-    new Notification({ title: 'Glorb', body: 'Stay focused!' }).show()
+    new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
     playSound(SND.chime)
 
     let pingCount = 1  // first ping already fired above
@@ -104,7 +104,7 @@ function runWeakRegular () {
         playSound(SND.chime)
         trackTimeout(() => playSound(SND.chime), 400)
         trackTimeout(() => playSound(SND.chime), 800)
-        new Notification({ title: 'Glorb', body: 'Last reminder — Stay focused!' }).show()
+        new Notification({ title: 'Glorb Timer', body: 'Last reminder — Stay focused!' }).show()
         // Step 4 — terminate after 3rd ping fires
         clearInterval(interval)
         // Remove from escalationTimers so clearAllTimers won't double-clear
@@ -119,7 +119,7 @@ function runWeakRegular () {
 function runWeakADHD () {
   // Step 1 — 10s: push notif + 1 note
   trackTimeout(() => {
-    new Notification({ title: 'Glorb', body: 'Stay focused!' }).show()
+    new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
     playNotes(1)
 
     let pingCount = 1
@@ -193,7 +193,7 @@ function fadeAudioOver30s () {
 function runStrongRegular () {
   // Step 1 — 15s: push "Stay focused!" + 1 chime
   trackTimeout(() => {
-    new Notification({ title: 'Glorb', body: 'Stay focused!' }).show()
+    new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
     playSound(SND.chime)
 
     let pingCount = 1
@@ -208,7 +208,7 @@ function runStrongRegular () {
         playSound(SND.chime)
         trackTimeout(() => playSound(SND.chime), 400)
         trackTimeout(() => playSound(SND.chime), 800)
-        new Notification({ title: 'Glorb', body: 'Last reminder — Stay focused!' }).show()
+        new Notification({ title: 'Glorb Timer', body: 'Last reminder — Stay focused!' }).show()
         clearInterval(interval)
         const idx = escalationTimers.indexOf(interval)
         if (idx !== -1) escalationTimers.splice(idx, 1)
@@ -240,7 +240,7 @@ function runStrongRegular () {
 function runStrongADHD () {
   // Step 1 — 10s: push notif + 1 note
   trackTimeout(() => {
-    new Notification({ title: 'Glorb', body: 'Stay focused!' }).show()
+    new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
     playNotes(1)
 
     let pingCount = 1
@@ -370,7 +370,7 @@ function startSocketServer () {
           socket.write('ok\n')
         } else if (cmd === 'refocus') {
           if (driftCount > 0) {
-            new Notification({ title: 'Glorb', body: 'Focus regained.' }).show()
+            new Notification({ title: 'Glorb Timer', body: 'Focus regained.' }).show()
           }
           driftCount = 0
           clearAllTimers()
@@ -480,7 +480,7 @@ ipcMain.handle('drift-detected', () => {
 
 ipcMain.handle('refocus-detected', () => {
   if (driftCount > 0) {
-    new Notification({ title: 'Glorb', body: 'Focus regained.' }).show()
+    new Notification({ title: 'Glorb Timer', body: 'Focus regained.' }).show()
   }
   driftCount = 0
   clearAllTimers()

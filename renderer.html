@@ -109,6 +109,12 @@
       <!-- Time display -->
       <div id="time-display"><span class="time-nums">25</span>m <span class="time-nums">00</span>s</div>
 
+      <!-- Task input + camera selection (quick-260419-d21) -->
+      <div id="focus-controls">
+        <input id="task-input" type="text" maxlength="120" placeholder="What are you focusing on?" autocomplete="off" spellcheck="false">
+        <select id="camera-select" aria-label="Camera"></select>
+      </div>
+
       <!-- Start / Pause / Resume button -->
       <button id="btn-start">Focus</button>
     </div>
@@ -229,6 +235,70 @@
         ringProgress.style.transition = 'stroke-dashoffset 1s linear'
       })
       syncHandleVisibility()
+      // Stop monitors + re-enable focus controls (quick-260419-d21).
+      // Calls are idempotent; safe even when no session was running.
+      if (window.glorb && window.glorb.stopMonitors) window.glorb.stopMonitors()
+      const tInput = document.getElementById('task-input')
+      const cSelect = document.getElementById('camera-select')
+      const fCtrls = document.getElementById('focus-controls')
+      if (tInput) tInput.disabled = false
+      if (cSelect) cSelect.disabled = false
+      if (fCtrls) fCtrls.classList.remove('disabled')
+    }
+
+    // === Quick-260419-d21: task input + camera selection ===
+    const taskInput = document.getElementById('task-input')
+    const cameraSelect = document.getElementById('camera-select')
+    const focusControls = document.getElementById('focus-controls')
+
+    async function populateCameras () {
+      try {
+        // Prime getUserMedia so labels are populated on macOS.
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        stream.getTracks().forEach(t => t.stop())
+      } catch (_) {}
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const cams = devices.filter(d => d.kind === 'videoinput')
+        cameraSelect.innerHTML = ''
+        if (cams.length === 0) {
+          const opt = document.createElement('option')
+          opt.value = ''
+          opt.textContent = 'No camera found'
+          cameraSelect.appendChild(opt)
+          cameraSelect.disabled = true
+          return
+        }
+        cams.forEach((d, i) => {
+          const opt = document.createElement('option')
+          opt.value = d.deviceId
+          opt.textContent = d.label || `Camera ${i + 1}`
+          cameraSelect.appendChild(opt)
+        })
+        const saved = await window.glorb.storeGet('cameraDeviceId', '')
+        if (saved && [...cameraSelect.options].some(o => o.value === saved)) {
+          cameraSelect.value = saved
+        }
+      } catch (err) {
+        console.warn('[ui] enumerateDevices failed:', err.message)
+      }
+    }
+
+    cameraSelect.addEventListener('change', () => {
+      window.glorb.storeSet('cameraDeviceId', cameraSelect.value)
+    })
+
+    window.glorb.storeGet('lastTask', '').then(t => { if (t) taskInput.value = t })
+    taskInput.addEventListener('input', () => {
+      window.glorb.storeSet('lastTask', taskInput.value)
+    })
+
+    populateCameras()
+
+    function setFocusControlsDisabled (disabled) {
+      taskInput.disabled = disabled
+      cameraSelect.disabled = disabled
+      focusControls.classList.toggle('disabled', disabled)
     }
 
     btnStart.addEventListener('click', () => {
@@ -238,10 +308,14 @@
         sessionStartTime = Date.now()
         btnStart.textContent = 'Unfocus'
         intervalId = setInterval(tick, 1000)
+        setFocusControlsDisabled(true)
+        window.glorb.startMonitors(taskInput.value || '', cameraSelect.value || '')
         syncHandleVisibility()
       } else if (timerState === 'running') {
         const elapsed = Math.round((Date.now() - sessionStartTime) / 1000)
         addFocusTime(elapsed)
+        window.glorb.stopMonitors()
+        setFocusControlsDisabled(false)
         resetTimer()
       }
     })
@@ -257,14 +331,14 @@
       settingsOpen = true
       appEl.classList.add('settings-open')
       btnHamburger.setAttribute('aria-label', 'Close settings')
-      window.glorb.resize(720, 468)
+      window.glorb.resize(720, 560)
     }
 
     function closeSettings() {
       settingsOpen = false
       appEl.classList.remove('settings-open')
       btnHamburger.setAttribute('aria-label', 'Open settings')
-      window.glorb.resize(286, 468)
+      window.glorb.resize(286, 560)
     }
 
     btnHamburger.addEventListener('click', () => {

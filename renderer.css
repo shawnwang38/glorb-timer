@@ -226,11 +226,59 @@ html, body {
   color: #1a1a1a;
 }
 
+/* Focus controls — task input + camera select (quick-260419-d21) */
+#focus-controls {
+  width: 240px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#focus-controls.disabled {
+  opacity: 0.5;
+}
+
+#task-input,
+#camera-select {
+  width: 100%;
+  padding: 6px 10px;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  outline: none;
+  line-height: 1.4;
+}
+
+#task-input:focus,
+#camera-select:focus {
+  border-color: #FF6B35;
+}
+
+#task-input::placeholder {
+  color: rgba(0, 0, 0, 0.35);
+}
+
+body.dark #task-input,
+body.dark #camera-select {
+  background: #202023;
+  color: #c0c0c8;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark #task-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 /* Start / Pause / Resume button — primary action, 160px centered */
 #btn-start {
   width: 160px;
   padding: 12px 24px;
-  margin-top: 32px;
+  margin-top: 20px;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   font-weight: 400;

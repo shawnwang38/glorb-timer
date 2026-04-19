@@ -1,0 +1,574 @@
+/* Glorb renderer styles — Phase 1 App Shell */
+
+/* === Reset and base === */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #f0f0f0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+/* === App container === */
+#app {
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+  position: relative;
+}
+
+/* === Close button (× — UI-SPEC Component 1) === */
+#btn-close {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.45);
+  z-index: 10;
+  transition: background 150ms ease, color 150ms ease;
+  line-height: 1;
+  padding: 0;
+}
+
+#btn-close:hover {
+  background: rgba(0, 0, 0, 0.07);
+  color: #1a1a1a;
+}
+
+/* === Quit overlay (UI-SPEC Component 2) === */
+#quit-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: #f0f0f0;
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#quit-overlay.visible {
+  display: flex;
+}
+
+#quit-overlay h2 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+#quit-overlay p {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #1a1a1a;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.overlay-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+  width: 100%;
+}
+
+.overlay-buttons button {
+  flex: 1;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  line-height: 1.5;
+}
+
+#btn-quit {
+  background: #1a1a1a;
+  color: #f0f0f0;
+  border: 1px solid #1a1a1a;
+}
+
+#btn-quit:hover {
+  background: #333333;
+  border-color: #333333;
+}
+
+#btn-keep {
+  background: transparent;
+  color: #1a1a1a;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+#btn-keep:hover {
+  background: rgba(0, 0, 0, 0.07);
+  color: #1a1a1a;
+}
+
+/* === Phase 2: Timer + Design === */
+
+/* Timer view container — fills #app, flex column, centered */
+#timer-view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px 32px 16px;
+  position: relative;
+}
+
+/* Ring wrapper — positions SVG and glorb as a stack */
+#timer-ring {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  flex-shrink: 0;
+}
+
+/* SVG ring element */
+#timer-ring svg {
+  display: block;
+}
+
+/* Progress circle — rotated so 12 o'clock is start point */
+#ring-progress {
+  transform: rotate(-90deg);
+  transform-origin: 100px 100px;
+  transition: stroke-dashoffset 1s linear;
+}
+
+/* glorb mascot container — centered over ring */
+#glorb-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+/* glorb image — fills container */
+#glorb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* glorb placeholder — light circle with "G" (shown when image absent) */
+#glorb-placeholder {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: #d4d4d4;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Vignette overlay — radial gradient blending mascot edges into background */
+#glorb-vignette {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 40%, #f0f0f0 75%);
+  pointer-events: none;
+}
+
+/* Time display — "XXh XXm" format, Display typography */
+#time-display {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #1a1a1a;
+  text-align: center;
+  margin-top: 24px;
+  padding: 8px 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Numeric time digits — same as body text, no orange highlight */
+.time-nums {
+  color: #1a1a1a;
+}
+
+/* Start / Pause / Resume button — primary action, 160px centered */
+#btn-start {
+  width: 160px;
+  padding: 12px 24px;
+  margin-top: 32px;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #f0f0f0;
+  background: #1a1a1a;
+  border: 1px solid #1a1a1a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+  line-height: 1.5;
+}
+
+#btn-start:hover {
+  background: #333333;
+  border-color: #333333;
+}
+
+/* Hamburger button — top-right, mirrors × close button placement */
+#btn-hamburger {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 150ms ease;
+  padding: 0;
+}
+
+#btn-hamburger:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+/* Hamburger icon — 3 bars stacked with gap */
+.hamburger-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburger-bars span {
+  display: block;
+  width: 14px;
+  height: 2px;
+  background: #1a1a1a;
+  border-radius: 1px;
+}
+
+/* === Phase 3: Settings Panel === */
+
+/* App container — flex row to hold timer-view + settings-panel side by side */
+#app {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+/* Timer view — fixed width so settings panel can sit alongside it */
+#timer-view {
+  width: 286px;
+  flex-shrink: 0;
+}
+
+/* Settings panel — 434px wide, slides in from right */
+#settings-panel {
+  width: 434px;
+  height: 100%;
+  background: #f0f0f0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 12px 24px 12px;
+  transform: translateX(100%);
+  transition: transform 250ms ease;
+  overflow: hidden;
+}
+
+/* Panel open state — slides panel into view when #app has .settings-open */
+#app.settings-open #settings-panel {
+  transform: translateX(0);
+}
+
+/* Orange utility — variable/dynamic values */
+.orange {
+  color: #FF6B35;
+}
+
+/* Focus summary */
+#focus-summary {
+  margin-bottom: 20px;
+}
+
+#focus-message {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+
+/* Settings section label */
+.settings-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+/* Strength selector */
+#strength-selector {
+  margin-bottom: 20px;
+}
+
+#strength-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.strength-btn {
+  width: 100%;
+  padding: 6px 8px;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1a1a1a;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms ease;
+}
+
+.strength-btn:not(.active):hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+#user-name {
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: border-color 150ms ease;
+}
+
+#user-name:hover {
+  border-bottom-color: #FF6B35;
+}
+
+#name-input {
+  display: none;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid #FF6B35;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  outline: none;
+  width: 8ch;
+  max-width: 120px;
+  padding: 0;
+  line-height: inherit;
+}
+
+#name-input.editing {
+  display: inline;
+}
+
+.strength-btn.active {
+  background: #1a1a1a;
+  color: #f0f0f0;
+  border-color: #1a1a1a;
+}
+
+/* Profile section */
+#profile-section {
+  margin-bottom: 20px;
+}
+
+#profile-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Ring slider handle */
+#ring-handle {
+  cursor: grab;
+}
+#ring-handle:active {
+  cursor: grabbing;
+}
+
+/* === Theme Toggle Button === */
+#btn-theme {
+  position: absolute;
+  top: 8px;
+  right: 44px; /* 8px gap + 28px hamburger + 8px gap = 44px from right */
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 150ms ease;
+  padding: 0;
+  color: #1a1a1a;
+}
+#btn-theme:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+#btn-theme svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* === Dark Theme Overrides === */
+body.dark,
+body.dark #app,
+body.dark #settings-panel,
+body.dark #quit-overlay {
+  background: #171719;
+  color: #c0c0c8;
+}
+
+body.dark #btn-close,
+body.dark #btn-theme,
+body.dark .hamburger-bars span {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark #btn-close:hover,
+body.dark #btn-theme:hover,
+body.dark #btn-hamburger:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #c0c0c8;
+}
+
+body.dark .hamburger-bars span {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+body.dark #time-display,
+body.dark .time-nums,
+body.dark #focus-message,
+body.dark .settings-label {
+  color: #c0c0c8;
+}
+
+body.dark .settings-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+body.dark #ring-progress {
+  stroke: #c0c0c8;
+}
+
+body.dark circle[stroke="rgba(0, 0, 0, 0.15)"] {
+  stroke: rgba(255, 255, 255, 0.15);
+}
+
+body.dark #ring-handle {
+  stroke: #171719;
+}
+
+body.dark #glorb-vignette {
+  background: radial-gradient(circle, transparent 40%, #171719 75%);
+}
+
+body.dark #btn-start {
+  background: #c0c0c8;
+  color: #171719;
+  border-color: #c0c0c8;
+}
+
+body.dark #btn-start:hover {
+  background: #d4d4d4;
+  border-color: #d4d4d4;
+}
+
+body.dark #btn-quit {
+  background: #c0c0c8;
+  color: #171719;
+  border-color: #c0c0c8;
+}
+
+body.dark #btn-quit:hover {
+  background: #d4d4d4;
+  border-color: #d4d4d4;
+}
+
+body.dark #btn-keep {
+  color: #c0c0c8;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+body.dark #btn-keep:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.dark .strength-btn {
+  color: #c0c0c8;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark .strength-btn:not(.active):hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.dark .strength-btn.active {
+  background: #c0c0c8;
+  color: #171719;
+  border-color: #c0c0c8;
+}
+
+body.dark #user-name:hover {
+  border-bottom-color: #FF6B35;
+}
+
+body.dark #name-input {
+  color: #c0c0c8;
+}
+
+body.dark #glorb-placeholder {
+  background: #333336;
+}
+

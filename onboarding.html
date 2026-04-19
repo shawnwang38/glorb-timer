@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+  <title>Glorb — Getting Started</title>
+  <link rel="stylesheet" href="onboarding.css">
+</head>
+<body>
+  <div id="onboarding-app">
+    <!-- Breathing background — sits behind all screens -->
+    <div class="breathing-bg"></div>
+
+    <!-- Screen 1: Greeting -->
+    <div class="screen active" id="screen-greeting">
+      <div class="greeting-content">
+        <img class="glorb-avatar" src="glorb_light.png" id="onb-glorb-img" alt="Glorb mascot">
+        <h1 class="text-display text-center greeting-heading">Hi, I'm Glorbus Pallidus. You can call me Glorb.</h1>
+        <button class="btn-primary greeting-cta" id="btn-get-started">Let's get started</button>
+      </div>
+    </div>
+
+    <!-- Screen 2: Name Entry -->
+    <div class="screen" id="screen-name">
+      <div class="name-content">
+        <h2 class="text-heading text-center name-heading">What should I call you?</h2>
+        <div class="name-input-wrap">
+          <input
+            id="onb-name-input"
+            class="onboarding-input"
+            type="text"
+            maxlength="30"
+            placeholder="Your name"
+            aria-label="Your name"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+        <button class="btn-primary name-cta" id="btn-name-next" disabled>Next</button>
+      </div>
+    </div>
+
+    <!-- Screen 3: Questionnaire Intro -->
+    <div class="screen" id="screen-intro">
+      <div class="intro-content">
+        <h2 class="text-heading text-center">In order to help you focus better, please help me learn about you:</h2>
+        <p class="text-body text-muted text-center intro-subtext">The following 18 questions are from the Adult ADHD Self-Report Scale (ASRS v1.1). Your answers are stored locally and never shared.</p>
+        <button class="btn-primary intro-cta" id="btn-begin">Begin</button>
+      </div>
+    </div>
+
+    <!-- Screen 4: Question (reused for all 18) -->
+    <div class="screen" id="screen-question">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      <p class="text-label text-muted text-center question-counter" id="question-counter" role="progressbar" aria-valuemin="0" aria-valuemax="18" aria-valuenow="0">Question 1 of 18</p>
+      <div class="question-content">
+        <p class="text-heading text-center question-text" id="question-text"></p>
+        <div class="dot-selector-row">
+          <span class="dot-label-left text-label text-muted">Never</span>
+          <div
+            class="dot-selector question-selector"
+            id="dot-selector"
+            role="radiogroup"
+            aria-label=""
+          >
+            <div class="response-dot" role="radio" aria-checked="false" tabindex="0" data-value="0"></div>
+            <div class="response-dot" role="radio" aria-checked="false" tabindex="0" data-value="1"></div>
+            <div class="response-dot" role="radio" aria-checked="false" tabindex="0" data-value="2"></div>
+            <div class="response-dot" role="radio" aria-checked="false" tabindex="0" data-value="3"></div>
+            <div class="response-dot" role="radio" aria-checked="false" tabindex="0" data-value="4"></div>
+          </div>
+          <span class="dot-label-right text-label text-muted">Very Often</span>
+        </div>
+      </div>
+      <div class="question-nav">
+        <button class="btn-back" id="btn-back" disabled>Back</button>
+      </div>
+    </div>
+
+    <!-- Screen 5: Completion -->
+    <div class="screen" id="screen-completion">
+      <div class="completion-content">
+        <p class="text-display text-center completion-message" id="completion-message">Thanks, let's focus!</p>
+        <p class="text-body text-muted text-center completion-subtext">Your profile is saved.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ── ASRS 1.1 Questions ──────────────────────────────────────────────────────
+  const QUESTIONS = [
+    // Part A (Q1–Q6) — used for diagnosis
+    "How often do you have trouble wrapping up the final details of a project, once the challenging parts have been done?",
+    "How often do you have difficulty getting things in order when you have to do a task that requires organization?",
+    "How often do you have problems remembering appointments or obligations?",
+    "When you have a task that requires a lot of thought, how often do you avoid or delay getting started?",
+    "How often do you fidget or squirm with your hands or feet when you have to sit down for a long time?",
+    "How often do you feel overly active and compelled to do things, like you were driven by a motor?",
+    // Part B (Q7–Q18) — collected but not used for diagnosis
+    "How often do you make careless mistakes when you have to work on a boring or difficult project?",
+    "How often do you have difficulty keeping your attention when you are doing boring or repetitive work?",
+    "How often do you have difficulty concentrating on what people say to you, even when they are speaking to you directly?",
+    "How often do you misplace or have difficulty finding things at home or at work?",
+    "How often are you distracted by activity or noise around you?",
+    "How often do you leave your seat in meetings or other situations in which you are expected to remain seated?",
+    "How often do you feel restless or fidgety?",
+    "How often do you have difficulty unwinding and relaxing when you have time to yourself?",
+    "How often do you find yourself talking too much when you are in social situations?",
+    "When you're in a conversation, how often do you find yourself finishing the sentences of the people you are talking to, before they can finish them themselves?",
+    "How often do you have difficulty waiting your turn in situations when turn taking is required?",
+    "How often do you interrupt others when they are busy?"
+  ]
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  let currentScreen = 'greeting'   // 'greeting' | 'name' | 'intro' | 'question' | 'completion'
+  let currentQuestion = 0          // 0-indexed, 0–17
+  let answers = new Array(18).fill(-1)  // -1 = unanswered; 0–4 = dot index
+  let userName = ''
+  let autoAdvanceTimer = null
+
+  // ── DOM refs ────────────────────────────────────────────────────────────────
+  const screens = {
+    greeting:   document.getElementById('screen-greeting'),
+    name:       document.getElementById('screen-name'),
+    intro:      document.getElementById('screen-intro'),
+    question:   document.getElementById('screen-question'),
+    completion: document.getElementById('screen-completion')
+  }
+  const onbGlorbImg    = document.getElementById('onb-glorb-img')
+  const btnGetStarted  = document.getElementById('btn-get-started')
+  const nameInput      = document.getElementById('onb-name-input')
+  const btnNameNext    = document.getElementById('btn-name-next')
+  const btnBegin       = document.getElementById('btn-begin')
+  const progressFill   = document.getElementById('progress-fill')
+  const questionCounter = document.getElementById('question-counter')
+  const questionText   = document.getElementById('question-text')
+  const dotSelector    = document.getElementById('dot-selector')
+  const dots           = dotSelector.querySelectorAll('.response-dot')
+  const btnBack        = document.getElementById('btn-back')
+  const completionMsg  = document.getElementById('completion-message')
+
+  // ── Screen transition ────────────────────────────────────────────────────────
+  function showScreen(name) {
+    const current = screens[currentScreen]
+    const next = screens[name]
+    current.classList.add('screen-exit')
+    current.addEventListener('animationend', () => {
+      current.classList.remove('screen-exit', 'active')
+      next.classList.add('screen-enter', 'active')
+      next.addEventListener('animationend', () => {
+        next.classList.remove('screen-enter')
+      }, { once: true })
+    }, { once: true })
+    currentScreen = name
+  }
+
+  // ── Theme ────────────────────────────────────────────────────────────────────
+  window.glorb.storeGet('theme', null).then(t => {
+    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    if (t === 'dark' || (t == null && sysDark)) {
+      document.body.classList.add('dark')
+      onbGlorbImg.src = 'glorb_dark.png'
+    }
+  })
+
+  // ── Screen 1: Greeting ───────────────────────────────────────────────────────
+  btnGetStarted.addEventListener('click', () => showScreen('name'))
+
+  // ── Screen 2: Name Entry ─────────────────────────────────────────────────────
+  nameInput.addEventListener('input', () => {
+    btnNameNext.disabled = nameInput.value.trim().length === 0
+  })
+
+  function advanceFromName() {
+    userName = nameInput.value.trim() || 'You'
+    showScreen('intro')
+  }
+
+  btnNameNext.addEventListener('click', () => {
+    if (nameInput.value.trim().length > 0) advanceFromName()
+  })
+
+  nameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && nameInput.value.trim().length > 0) {
+      e.preventDefault()
+      advanceFromName()
+    }
+  })
+
+  // ── Screen 3: Questionnaire Intro ────────────────────────────────────────────
+  btnBegin.addEventListener('click', () => {
+    currentQuestion = 0
+    renderQuestion(0)
+    showScreen('question')
+  })
+
+  // ── Screen 4: Question Engine ────────────────────────────────────────────────
+  function renderQuestion(index) {
+    // Progress bar: width = ((index) / 18) * 100 before answering; after answer it advances
+    const pct = Math.round((index / 18) * 100)
+    progressFill.style.width = pct + '%'
+
+    // Counter
+    questionCounter.textContent = 'Question ' + (index + 1) + ' of 18'
+    questionCounter.setAttribute('aria-valuenow', index + 1)
+
+    // Question text
+    questionText.textContent = QUESTIONS[index]
+    dotSelector.setAttribute('aria-label', QUESTIONS[index])
+
+    // Restore selection if already answered (Back navigation)
+    const savedAnswer = answers[index]
+    dots.forEach((dot, i) => {
+      const selected = savedAnswer === i
+      dot.classList.toggle('selected', selected)
+      dot.setAttribute('aria-checked', String(selected))
+    })
+
+    // Back button: disabled on Q1
+    btnBack.disabled = (index === 0)
+  }
+
+  // Dot selection
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => selectDot(parseInt(dot.dataset.value, 10)))
+    dot.addEventListener('keydown', e => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault()
+        selectDot(parseInt(dot.dataset.value, 10))
+      }
+    })
+  })
+
+  function selectDot(value) {
+    if (autoAdvanceTimer !== null) return  // debounce rapid taps
+
+    // Update selection visuals
+    dots.forEach((dot, i) => {
+      const selected = i === value
+      dot.classList.toggle('selected', selected)
+      dot.setAttribute('aria-checked', String(selected))
+    })
+
+    answers[currentQuestion] = value
+
+    // Auto-advance after 250ms
+    autoAdvanceTimer = setTimeout(() => {
+      autoAdvanceTimer = null
+      if (currentQuestion < 17) {
+        currentQuestion++
+        renderQuestion(currentQuestion)
+      } else {
+        completeQuestionnaire()
+      }
+    }, 250)
+  }
+
+  // Back button
+  btnBack.addEventListener('click', () => {
+    if (currentQuestion === 0) return
+    if (autoAdvanceTimer !== null) {
+      clearTimeout(autoAdvanceTimer)
+      autoAdvanceTimer = null
+    }
+    currentQuestion--
+    renderQuestion(currentQuestion)
+  })
+
+  // ── Scoring ──────────────────────────────────────────────────────────────────
+  // ASRS v1.1 Part A scoring (per ASRS-SCORING.md):
+  // Q1-Q3 (index 0-2): positive if answer >= 2 (Sometimes)
+  // Q4-Q6 (index 3-5): positive if answer >= 3 (Often)
+  // hasADHD = true if positiveCount >= 4
+  function scorePartA(ans) {
+    let positiveCount = 0
+    for (let i = 0; i < 3; i++) {
+      if (ans[i] >= 2) positiveCount++
+    }
+    for (let i = 3; i < 6; i++) {
+      if (ans[i] >= 3) positiveCount++
+    }
+    return positiveCount >= 4
+  }
+
+  // ── Completion ───────────────────────────────────────────────────────────────
+  async function completeQuestionnaire() {
+    const hasADHD = scorePartA(answers)
+
+    // Persist to store
+    await window.glorb.storeSet('userName', userName)
+    await window.glorb.storeSet('hasADHD', hasADHD)
+    await window.glorb.storeSet('asrsAnswers', answers)
+    await window.glorb.storeSet('onboardingComplete', true)
+
+    // Update completion message
+    const displayName = userName === 'You' ? '' : userName + ', '
+    completionMsg.textContent = 'Thanks ' + displayName + 'let\'s focus!'
+
+    showScreen('completion')
+
+    // Auto-dismiss after 1800ms
+    setTimeout(() => {
+      window.glorb.closeOnboarding()
+    }, 1800)
+  }
+  </script>
+</body>
+</html>

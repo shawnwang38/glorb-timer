@@ -1,0 +1,16 @@
+node_modules/
+.DS_Store
+*.log
+dist/
+
+# Planning and AI tooling
+.claude/
+.planning/
+*.pdf
+*.md
+!README.md
+
+# Design assets / scratch files
+selection-menu.png
+intervention-ui.md
+onboarding-ui.md

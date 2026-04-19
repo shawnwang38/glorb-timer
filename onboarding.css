@@ -1,0 +1,230 @@
+/* onboarding.css — Glorb Onboarding Window Styles */
+/* Phase 7: Onboarding Flow — all component classes per 07-UI-SPEC.md */
+
+/* === Reset and Base === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #f0f0f0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px; font-weight: 400; line-height: 1.5; color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  user-select: none; -webkit-user-select: none; -webkit-app-region: no-drag;
+}
+
+body.dark { background: #171719; color: #c0c0c8; }
+
+/* === Window Wrapper === */
+#onboarding-app {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+
+/* === Breathing Gradient (all screens — child of #onboarding-app) === */
+.breathing-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background: radial-gradient(circle at center, #c8c8c8 0%, #f0f0f0 65%);
+  transform: scale(0.85); opacity: 0.18;
+  animation: breathe 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+body.dark .breathing-bg {
+  background: radial-gradient(circle at center, #3a3a3e 0%, #171719 65%);
+}
+
+@keyframes breathe {
+  0%   { transform: scale(0.85); opacity: 0.18; }
+  50%  { transform: scale(1.15); opacity: 0.32; }
+  100% { transform: scale(0.85); opacity: 0.18; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathing-bg { animation: none; transform: scale(1); opacity: 0.6; }
+}
+
+/* === Screen Container and Transitions === */
+.screen {
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; height: 100%; position: relative; z-index: 1;
+}
+
+.screen.active { display: flex; }
+
+.screen-exit { animation: fadeOut 120ms ease forwards; }
+.screen-enter { animation: fadeIn 120ms ease forwards; }
+
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+
+/* === Typography Helpers === */
+.text-display { font-size: 42px; font-weight: 600; line-height: 1.2; }
+.text-heading { font-size: 30px; font-weight: 600; line-height: 1.3; }
+.text-body    { font-size: 22px; font-weight: 400; line-height: 1.5; }
+.text-label   { font-size: 18px; font-weight: 400; line-height: 1.5; }
+.text-muted   { color: rgba(0,0,0,0.45); }
+body.dark .text-muted { color: rgba(255,255,255,0.45); }
+.text-center  { text-align: center; }
+
+/* === Component 1: Progress Bar === */
+.progress-bar-track {
+  position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+  background: rgba(0,0,0,0.1);
+}
+
+body.dark .progress-bar-track { background: rgba(255,255,255,0.1); }
+
+.progress-bar-fill {
+  height: 100%; background: #FF6B35;
+  transition: width 200ms ease;
+}
+
+/* === Component 2 + 3: Response Dots and Dot Selector === */
+.dot-selector { display: flex; align-items: center; gap: 16px; }
+
+.dot-selector-row {
+  display: flex; align-items: center; gap: 20px; margin-top: 32px;
+}
+
+.dot-label-left  { font-size: 18px; color: rgba(0,0,0,0.45); white-space: nowrap; }
+.dot-label-right { font-size: 18px; color: rgba(0,0,0,0.45); white-space: nowrap; }
+
+body.dark .dot-label-left,
+body.dark .dot-label-right { color: rgba(255,255,255,0.45); }
+
+.response-dot {
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.25); background: transparent;
+  cursor: pointer; flex-shrink: 0;
+  transition: background 150ms ease, border-color 150ms ease, width 150ms ease, height 150ms ease;
+}
+
+/* Bell-curve sizing: outer=60, adjacent=50, center=40 */
+.dot-selector .response-dot:nth-child(1),
+.dot-selector .response-dot:nth-child(5) { width: 60px; height: 60px; }
+
+.dot-selector .response-dot:nth-child(2),
+.dot-selector .response-dot:nth-child(4) { width: 50px; height: 50px; }
+
+.dot-selector .response-dot:nth-child(3) { width: 40px; height: 40px; }
+
+.response-dot:hover { border-color: #FF6B35; }
+.response-dot.selected { background: #FF6B35; border-color: #FF6B35; }
+.response-dot:focus-visible { outline: 2px solid #FF6B35; outline-offset: 2px; }
+
+body.dark .response-dot { border-color: rgba(255,255,255,0.25); }
+body.dark .response-dot:hover { border-color: #FF6B35; }
+body.dark .response-dot.selected { background: #FF6B35; border-color: #FF6B35; }
+
+/* === Component 4: Primary Button (CTA / Next / Begin) === */
+.btn-primary {
+  background: #FF6B35; color: #f0f0f0; border: none; border-radius: 8px;
+  height: 48px; min-width: 160px; padding: 0 24px;
+  font-size: 16px; font-weight: 400; font-family: inherit;
+  cursor: pointer; transition: background 150ms ease, box-shadow 150ms ease;
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.35), 0 1px 3px rgba(0,0,0,0.12);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #e55a24;
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.45), 0 2px 6px rgba(0,0,0,0.15);
+}
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* === Component 5: Text Input === */
+.onboarding-input {
+  width: 100%; height: 48px;
+  border: 1.5px solid rgba(0,0,0,0.2); border-radius: 8px;
+  padding: 0 16px; font-size: 16px; font-family: inherit;
+  background: rgba(0,0,0,0.03); color: inherit; outline: none;
+  transition: border-color 150ms ease;
+}
+
+.onboarding-input:focus { border-color: #FF6B35; }
+
+.onboarding-input::placeholder { color: rgba(0,0,0,0.35); }
+
+body.dark .onboarding-input {
+  border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04);
+  color: #c0c0c8;
+}
+
+body.dark .onboarding-input:focus { border-color: #FF6B35; }
+body.dark .onboarding-input::placeholder { color: rgba(255,255,255,0.35); }
+
+/* === Component 6: Back Button === */
+.btn-back {
+  background: transparent; border: none; font-size: 14px; font-family: inherit;
+  color: rgba(0,0,0,0.45); cursor: pointer; padding: 8px 16px;
+  transition: color 150ms ease;
+}
+
+.btn-back:hover { color: #1a1a1a; text-shadow: 0 0 8px rgba(0,0,0,0.12); }
+.btn-back:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+body.dark .btn-back { color: rgba(255,255,255,0.45); }
+body.dark .btn-back:hover { color: #c0c0c8; }
+
+/* === Screen 1: Greeting Layout === */
+.greeting-content {
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 32px; max-width: 560px; width: 100%;
+}
+
+.glorb-avatar {
+  width: 120px; height: 120px; border-radius: 50%;
+  object-fit: cover; display: block; flex-shrink: 0;
+}
+
+.greeting-heading {
+  margin-top: 24px; max-width: 480px;
+}
+
+.greeting-subtext { margin-top: 16px; }
+.greeting-cta     { margin-top: 32px; }
+
+/* === Screen 2: Name Entry Layout === */
+.name-content {
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 32px; max-width: 560px; width: 100%;
+}
+
+.name-heading  { margin-top: 0; }
+.name-input-wrap { margin-top: 24px; width: 100%; }
+.name-cta { margin-top: 32px; }
+
+/* === Screen 3: Questionnaire Intro Layout === */
+.intro-content {
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 40px; max-width: 560px; width: 100%;
+}
+
+.intro-subtext { margin-top: 32px; max-width: 480px; }
+.intro-cta     { margin-top: 32px; }
+
+/* === Screen 4: Question Screen Layout === */
+.question-content {
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; max-width: 600px; padding: 0 24px;
+}
+
+.question-counter { margin-top: 12px; }
+.question-text    { margin-top: 32px; max-width: 560px; }
+.question-selector { margin-top: 0; }
+
+.question-nav {
+  position: absolute; bottom: 24px; left: 0; right: 0;
+  display: flex; align-items: center; padding: 0 24px;
+}
+
+/* === Screen 5: Completion Screen Layout === */
+.completion-content {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%;
+}
+
+.completion-message  { }
+.completion-subtext  { margin-top: 16px; }

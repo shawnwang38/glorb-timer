@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=220, initial-scale=1.0">
+  <title>Glorb</title>
+  <link rel="stylesheet" href="renderer.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Close button (× — D-03, D-04) -->
+    <button id="btn-close" title="Quit Glorb">&times;</button>
+
+    <!-- Quit confirmation overlay (D-04) -->
+    <div id="quit-overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-heading">
+      <h2 id="overlay-heading">Quit Glorb?</h2>
+      <p>This will close the app, not just hide the window.</p>
+      <div class="overlay-buttons">
+        <button id="btn-quit">Quit Glorb</button>
+        <button id="btn-keep">Keep Running</button>
+      </div>
+    </div>
+
+    <!-- Intervention terminate popup (Phase 8 gap closure) -->
+    <div id="intervention-popup" role="alert" aria-live="assertive" style="display:none; position:absolute; inset:0; z-index:200; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; border-radius:inherit;">
+      <div style="background:#fff; color:#111; border-radius:8px; padding:16px 20px; max-width:220px; text-align:center; font-size:13px; font-weight:500; line-height:1.4;" id="intervention-popup-msg"></div>
+    </div>
+
+    <!-- Theme toggle button (sun/moon) -->
+    <button id="btn-theme" aria-label="Toggle dark/light theme">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Sun icon (Lucide-style outline) — visible in dark mode (click to go light) -->
+        <g id="icon-sun" style="display:none;">
+          <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          <line x1="8" y1="1.5" x2="8" y2="3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          <line x1="8" y1="13" x2="8" y2="14.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          <line x1="1.5" y1="8" x2="3" y2="8" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          <line x1="13" y1="8" x2="14.5" y2="8" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          <line x1="3.4" y1="3.4" x2="4.5" y2="4.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          <line x1="11.5" y1="11.5" x2="12.6" y2="12.6" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          <line x1="12.6" y1="3.4" x2="11.5" y2="4.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+          <line x1="4.5" y1="11.5" x2="3.4" y2="12.6" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+        </g>
+        <!-- Moon icon (Lucide-style outline) — visible in light mode (click to go dark) -->
+        <g id="icon-moon" style="display:block;">
+          <path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    </button>
+
+    <!-- Hamburger button (Phase 3) -->
+    <button id="btn-hamburger" aria-label="Open settings">
+      <div class="hamburger-bars">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </button>
+
+    <!-- Timer view -->
+    <div id="timer-view">
+      <!-- SVG ring + glorb mascot stacked -->
+      <div id="timer-ring">
+        <svg width="200" height="200" viewBox="0 0 200 200">
+          <!-- Track circle (ghost ring) -->
+          <circle
+            cx="100" cy="100" r="92"
+            fill="none"
+            stroke="rgba(0, 0, 0, 0.15)"
+            stroke-width="4"
+          />
+          <!-- Progress circle (animated countdown) -->
+          <circle
+            id="ring-progress"
+            cx="100" cy="100" r="92"
+            fill="none"
+            stroke="#1a1a1a"
+            stroke-width="4"
+            stroke-linecap="round"
+            stroke-dasharray="578.05"
+            stroke-dashoffset="0"
+          />
+          <!-- Duration handle — draggable dot on ring, visible only when idle -->
+          <circle
+            id="ring-handle"
+            cx="100" cy="8"
+            r="7"
+            fill="#FF6B35"
+            stroke="#f0f0f0"
+            stroke-width="2"
+            style="cursor: grab; touch-action: none;"
+          />
+        </svg>
+
+        <!-- glorb mascot centered over ring -->
+        <div id="glorb-container">
+          <img
+            id="glorb-img"
+            src="glorb_light.png"
+            alt="Glorb mascot"
+            onerror="this.style.display='none'; document.getElementById('glorb-placeholder').style.display='flex';"
+          >
+          <div id="glorb-placeholder" style="display:none;">G</div>
+          <div id="glorb-vignette"></div>
+        </div>
+      </div>
+
+      <!-- Time display -->
+      <div id="time-display"><span class="time-nums">25</span>m <span class="time-nums">00</span>s</div>
+
+      <!-- Start / Pause / Resume button -->
+      <button id="btn-start">Focus</button>
+    </div>
+
+    <!-- Settings panel (Phase 3 — slides in from right) -->
+    <div id="settings-panel" aria-label="Settings">
+      <!-- Focus summary -->
+      <div id="focus-summary">
+        <p id="focus-message">Hi <span id="user-name" class="orange" title="Click to edit name">Ouen</span><input id="name-input" type="text" maxlength="30" autocomplete="off" spellcheck="false">,<br>you've focused for <span class="orange" id="focus-time">00h 00m</span> with Glorb.</p>
+      </div>
+
+      <!-- Strength selector -->
+      <div id="strength-selector">
+        <p class="settings-label">Intervention</p>
+        <div id="strength-buttons" role="group" aria-label="Focus strength">
+          <button class="strength-btn active" data-strength="weak">Weak</button>
+          <button class="strength-btn" data-strength="strong">Strong</button>
+        </div>
+      </div>
+
+      <!-- Profile section -->
+      <div id="profile-section">
+        <p class="settings-label">Profile</p>
+        <div id="profile-buttons">
+          <button class="strength-btn" id="btn-retake">Retake Test</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const btnClose = document.getElementById('btn-close')
+    const btnQuit = document.getElementById('btn-quit')
+    const btnKeep = document.getElementById('btn-keep')
+    const overlay = document.getElementById('quit-overlay')
+
+    function showOverlay() {
+      overlay.classList.add('visible')
+      btnQuit.focus()
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove('visible')
+    }
+
+    btnClose.addEventListener('click', showOverlay)
+
+    btnQuit.addEventListener('click', () => {
+      window.glorb.quit()
+    })
+
+    btnKeep.addEventListener('click', hideOverlay)
+
+    // === Phase 2: Timer Engine ===
+
+    const CIRCUMFERENCE = 2 * Math.PI * 92  // ≈ 578.05px — matches SVG r=92
+
+    let startMinutes = 25
+    function getTotalSeconds() { return startMinutes * 60 }
+
+    const ringProgress = document.getElementById('ring-progress')
+    const timeDisplay = document.getElementById('time-display')
+    const btnStart = document.getElementById('btn-start')
+
+    let remaining = getTotalSeconds()
+    let timerState = 'idle'  // 'idle' | 'running' | 'paused'
+    let intervalId = null
+    let sessionStartTime = null
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60)
+      const s = secs % 60
+      const mStr = String(m).padStart(2, '0')
+      const sStr = String(s).padStart(2, '0')
+      return `<span class="time-nums">${mStr}</span>m <span class="time-nums">${sStr}</span>s`
+    }
+
+    function formatFocusTime(secs) {
+      const h = Math.floor(secs / 3600)
+      const m = Math.floor((secs % 3600) / 60)
+      return `${h}h ${m}m`
+    }
+
+    function updateRing(secs) {
+      const offset = CIRCUMFERENCE * (1 - secs / getTotalSeconds())
+      ringProgress.style.strokeDashoffset = offset
+    }
+
+    function tick() {
+      const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000)
+      remaining = getTotalSeconds() - elapsed
+      if (remaining <= 0) {
+        remaining = 0
+        window.glorb.notify('Glorb', 'Focus session complete.')
+        updateRing(0)
+        timeDisplay.innerHTML = formatTime(0)
+        addFocusTime(getTotalSeconds())
+        resetTimer()
+        return
+      }
+      updateRing(remaining)
+      timeDisplay.innerHTML = formatTime(remaining)
+    }
+
+    function resetTimer() {
+      clearInterval(intervalId)
+      intervalId = null
+      timerState = 'idle'
+      remaining = getTotalSeconds()
+      // Disable transition for instant reset, then re-enable
+      ringProgress.style.transition = 'none'
+      updateRing(getTotalSeconds())
+      timeDisplay.innerHTML = formatTime(getTotalSeconds())
+      btnStart.textContent = 'Start'
+      // Re-enable transition after a frame so next run animates smoothly
+      requestAnimationFrame(() => {
+        ringProgress.style.transition = 'stroke-dashoffset 1s linear'
+      })
+      syncHandleVisibility()
+    }
+
+    btnStart.addEventListener('click', () => {
+      if (timerState === 'idle') {
+        ringProgress.style.transition = 'stroke-dashoffset 1s linear'
+        timerState = 'running'
+        sessionStartTime = Date.now()
+        btnStart.textContent = 'Unfocus'
+        intervalId = setInterval(tick, 1000)
+        syncHandleVisibility()
+      } else if (timerState === 'running') {
+        const elapsed = Math.round((Date.now() - sessionStartTime) / 1000)
+        addFocusTime(elapsed)
+        resetTimer()
+      }
+    })
+
+    // === Phase 3: Settings Panel Toggle ===
+
+    const btnHamburger = document.getElementById('btn-hamburger')
+    const appEl = document.getElementById('app')
+
+    let settingsOpen = false
+
+    function openSettings() {
+      settingsOpen = true
+      appEl.classList.add('settings-open')
+      btnHamburger.setAttribute('aria-label', 'Close settings')
+      window.glorb.resize(720, 468)
+    }
+
+    function closeSettings() {
+      settingsOpen = false
+      appEl.classList.remove('settings-open')
+      btnHamburger.setAttribute('aria-label', 'Open settings')
+      window.glorb.resize(286, 468)
+    }
+
+    btnHamburger.addEventListener('click', () => {
+      if (settingsOpen) {
+        closeSettings()
+      } else {
+        openSettings()
+      }
+    })
+
+    // === Phase 8: Intervention terminate popup ===
+    function showInterventionPopup(message) {
+      const popup = document.getElementById('intervention-popup')
+      const msg = document.getElementById('intervention-popup-msg')
+      if (!popup || !msg) return
+      msg.textContent = message || 'Session ended.'
+      popup.style.display = 'flex'
+      setTimeout(() => { popup.style.display = 'none' }, 5000)
+    }
+
+    // === Duration ring slider ===
+
+    const ringHandle = document.getElementById('ring-handle')
+    const SVG_CX = 100  // SVG center x
+    const SVG_CY = 100  // SVG center y
+    const RING_R = 92   // ring radius
+
+    let draggingHandle = false
+
+    function angleToMinutes(angleDeg) {
+      // angleDeg: 0 = 12 o'clock, clockwise positive
+      // clamp to 1–60 minutes
+      const mins = Math.round((angleDeg / 360) * 60)
+      return Math.min(60, Math.max(1, mins === 0 ? 60 : mins))
+    }
+
+    function minutesToAngle(mins) {
+      return (mins / 60) * 360
+    }
+
+    function minutesToHandlePos(mins) {
+      const angleDeg = minutesToAngle(mins)
+      const angleRad = (angleDeg - 90) * (Math.PI / 180)
+      return {
+        cx: SVG_CX + RING_R * Math.cos(angleRad),
+        cy: SVG_CY + RING_R * Math.sin(angleRad)
+      }
+    }
+
+    function updateHandlePosition(mins) {
+      const pos = minutesToHandlePos(mins)
+      ringHandle.setAttribute('cx', pos.cx)
+      ringHandle.setAttribute('cy', pos.cy)
+    }
+
+    function getSVGPoint(e, svgEl) {
+      const rect = svgEl.getBoundingClientRect()
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY
+      // Scale from client coords to SVG viewBox coords
+      const scaleX = 200 / rect.width
+      const scaleY = 200 / rect.height
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      }
+    }
+
+    ringHandle.addEventListener('pointerdown', (e) => {
+      if (timerState !== 'idle') return
+      draggingHandle = true
+      ringHandle.style.cursor = 'grabbing'
+      e.preventDefault()
+      e.target.setPointerCapture(e.pointerId)
+    })
+
+    ringHandle.addEventListener('pointermove', (e) => {
+      if (!draggingHandle) return
+      const svg = ringHandle.closest('svg')
+      const pt = getSVGPoint(e, svg)
+      const dx = pt.x - SVG_CX
+      const dy = pt.y - SVG_CY
+      // atan2 from -90deg offset so 0deg = 12 o'clock
+      let angleDeg = Math.atan2(dy, dx) * (180 / Math.PI) + 90
+      if (angleDeg < 0) angleDeg += 360
+      const mins = angleToMinutes(angleDeg)
+      startMinutes = mins
+      updateHandlePosition(mins)
+      // Update display without resetting timer state
+      remaining = getTotalSeconds()
+      updateRing(getTotalSeconds())
+      timeDisplay.innerHTML = formatTime(getTotalSeconds())
+      e.preventDefault()
+    })
+
+    ringHandle.addEventListener('pointerup', (e) => {
+      draggingHandle = false
+      ringHandle.style.cursor = 'grab'
+    })
+
+    // Hide handle while timer is running or paused; show when idle
+    function syncHandleVisibility() {
+      ringHandle.style.display = timerState === 'idle' ? '' : 'none'
+    }
+
+    // Initialise handle position and visibility on page load
+    updateHandlePosition(startMinutes)
+    syncHandleVisibility()
+
+    // Reset to timer view whenever the window is hidden (tray icon click to hide)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && settingsOpen) {
+        closeSettings()
+      }
+    })
+
+    // === Persistence + Settings Interactivity ===
+
+    // --- Helpers ---
+    function addFocusTime(seconds) {
+      window.glorb.storeGet('focusTime', 0).then(current => {
+        const updated = (current || 0) + seconds
+        window.glorb.storeSet('focusTime', updated)
+        updateFocusMessage()
+      })
+    }
+
+    function updateFocusMessage() {
+      window.glorb.storeGet('focusTime', 0).then(secs => {
+        document.getElementById('focus-time').textContent = formatFocusTime(secs || 0)
+      })
+      window.glorb.storeGet('userName', 'Ouen').then(name => {
+        userNameEl.textContent = name
+      })
+    }
+
+    // --- Strength buttons — radio group ---
+    const strengthBtns = document.querySelectorAll('.strength-btn[data-strength]')
+    strengthBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        strengthBtns.forEach(b => b.classList.remove('active'))
+        btn.classList.add('active')
+        const val = btn.dataset.strength
+        window.glorb.storeSet('strength', val)
+      })
+    })
+    document.getElementById('btn-retake').addEventListener('click', () => window.glorb.openOnboarding())
+
+    // Restore saved strength on load
+    window.glorb.storeGet('strength', 'weak').then(savedStrength => {
+      if (savedStrength === 'auto') {
+        savedStrength = 'weak'
+        window.glorb.storeSet('strength', 'weak')
+      }
+      strengthBtns.forEach(b => b.classList.remove('active'))
+      const target = document.querySelector(`.strength-btn[data-strength="${savedStrength}"]`)
+      if (target) target.classList.add('active')
+    })
+
+    // --- User name inline edit ---
+    const userNameEl = document.getElementById('user-name')
+    const nameInput = document.getElementById('name-input')
+
+    function commitName() {
+      const newName = nameInput.value.trim() || userNameEl.textContent
+      userNameEl.textContent = newName || 'You'
+      nameInput.classList.remove('editing')
+      nameInput.style.display = 'none'
+      userNameEl.style.display = ''
+      window.glorb.storeSet('userName', userNameEl.textContent)
+      updateFocusMessage()
+    }
+
+    userNameEl.addEventListener('click', () => {
+      nameInput.value = userNameEl.textContent
+      nameInput.style.display = 'inline'
+      nameInput.classList.add('editing')
+      userNameEl.style.display = 'none'
+      nameInput.focus()
+      nameInput.select()
+    })
+
+    nameInput.addEventListener('blur', commitName)
+    nameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); nameInput.blur() }
+      if (e.key === 'Escape') {
+        nameInput.value = userNameEl.textContent
+        nameInput.blur()
+      }
+    })
+
+    // Load saved name and focus time on startup
+    window.glorb.storeGet('userName', 'Ouen').then(name => {
+      userNameEl.textContent = name
+      updateFocusMessage()
+    })
+    updateFocusMessage()
+
+    // === Theme Toggle ===
+
+    const btnTheme = document.getElementById('btn-theme')
+    const iconSun = document.getElementById('icon-sun')
+    const iconMoon = document.getElementById('icon-moon')
+    const glorbImg = document.getElementById('glorb-img')
+
+    let isDark = false
+
+    function applyTheme(dark) {
+      isDark = dark
+      if (dark) {
+        document.body.classList.add('dark')
+        glorbImg.src = 'glorb_dark.png'
+        iconSun.style.display = 'block'
+        iconMoon.style.display = 'none'
+      } else {
+        document.body.classList.remove('dark')
+        glorbImg.src = 'glorb_light.png'
+        iconSun.style.display = 'none'
+        iconMoon.style.display = 'block'
+      }
+    }
+
+    btnTheme.addEventListener('click', () => {
+      applyTheme(!isDark)
+      window.glorb.storeSet('theme', isDark ? 'dark' : 'light')
+    })
+
+    // Restore theme on load
+    window.glorb.storeGet('theme', 'light').then(savedTheme => {
+      applyTheme(savedTheme === 'dark')
+    })
+
+    // Intervention terminate: stop timer and show in-window popup (Phase 8, INTERV-03/04)
+    window.glorb.onInterventionTerminate((data) => {
+      if (typeof resetTimer === 'function') resetTimer()
+      showInterventionPopup(data.message)
+    })
+  </script>
+</body>
+</html>

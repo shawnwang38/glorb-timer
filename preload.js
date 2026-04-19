@@ -12,5 +12,14 @@ contextBridge.exposeInMainWorld('glorb', {
   driftDetected: () => ipcRenderer.invoke('drift-detected'),
   refocusDetected: () => ipcRenderer.invoke('refocus-detected'),
   onInterventionTerminate: (cb) => ipcRenderer.on('intervention-terminate', (_e, data) => cb(data)),
-  closeOverlay: () => ipcRenderer.invoke('close-overlay')
+  closeOverlay: () => ipcRenderer.invoke('close-overlay'),
+  startMonitors: (task, cameraDeviceId) =>
+    ipcRenderer.invoke('start-monitors', { task, cameraDeviceId }),
+  stopMonitors: () => ipcRenderer.invoke('stop-monitors')
+})
+
+// Separate bridge for the hidden detector window
+contextBridge.exposeInMainWorld('glorbDetector', {
+  drift: () => ipcRenderer.invoke('camera-drift'),
+  refocus: () => ipcRenderer.invoke('camera-refocus')
 })

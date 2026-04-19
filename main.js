@@ -5,6 +5,7 @@ const net = require('net')
 const fs = require('fs')
 const Store = require('electron-store')
 const store = new Store()
+const appMonitor = require('./detect/appMonitor')
 
 // Phase 8 — macOS system sound paths (D-01: afplay only, no bundled files)
 const SND = {
@@ -30,6 +31,22 @@ function playNotes (count) {
 let tray = null
 let win = null
 let onboardingWin = null
+let detectorWin = null
+
+function triggerDrift () {
+  driftCount++
+  const strength = store.get('strength', 'weak')
+  const hasADHD = store.get('hasADHD', false)
+  runPath(`${strength === 'strong' ? 'strong' : 'weak'}-${hasADHD ? 'adhd' : 'regular'}`)
+}
+
+function triggerRefocus () {
+  if (driftCount > 0) {
+    new Notification({ title: 'Glorb Timer', body: 'Focus regained.' }).show()
+  }
+  driftCount = 0
+  clearAllTimers()
+}
 
 // Phase 8 — CLI IPC socket (D-12: dev-only, Unix domain socket)
 const SOCK_PATH = '/tmp/glorb-ipc.sock'
@@ -281,7 +298,7 @@ function runStrongADHD () {
 function createWindow () {
   win = new BrowserWindow({
     width: 286,
-    height: 468,
+    height: 560,
     show: false,
     frame: false,
     resizable: false,
@@ -299,6 +316,35 @@ function createWindow () {
   win.on('blur', () => {
     win.hide()
   })
+}
+
+function createDetectorWindow (deviceId) {
+  if (detectorWin && !detectorWin.isDestroyed()) {
+    detectorWin.close()
+    detectorWin = null
+  }
+  detectorWin = new BrowserWindow({
+    width: 320,
+    height: 240,
+    show: false,
+    frame: false,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+  const q = deviceId ? `?deviceId=${encodeURIComponent(deviceId)}` : ''
+  detectorWin.loadURL(`file://${path.join(__dirname, 'detector.html')}${q}`)
+  detectorWin.on('closed', () => { detectorWin = null })
+}
+
+function stopDetectorWindow () {
+  if (detectorWin && !detectorWin.isDestroyed()) {
+    detectorWin.close()
+  }
+  detectorWin = null
 }
 
 function createTray () {
@@ -471,17 +517,33 @@ ipcMain.handle('close-onboarding', () => {
 })
 
 // Phase 8 — INTERV-01/02: drift and refocus IPC handlers
-ipcMain.handle('drift-detected', () => {
-  driftCount++
-  const strength = store.get('strength', 'weak')
-  const hasADHD = store.get('hasADHD', false)
-  runPath(`${strength === 'strong' ? 'strong' : 'weak'}-${hasADHD ? 'adhd' : 'regular'}`)
+ipcMain.handle('drift-detected', () => triggerDrift())
+ipcMain.handle('refocus-detected', () => triggerRefocus())
+
+// Quick-260419-d21: camera detector IPC (from hidden detector window)
+ipcMain.handle('camera-drift', () => triggerDrift())
+ipcMain.handle('camera-refocus', () => triggerRefocus())
+
+// Quick-260419-d21: monitor lifecycle (from timer UI)
+ipcMain.handle('start-monitors', async (event, { task, cameraDeviceId }) => {
+  try {
+    createDetectorWindow(cameraDeviceId || '')
+  } catch (err) {
+    console.warn('[monitors] camera detector failed:', err.message)
+  }
+  try {
+    await appMonitor.start({
+      task: task || '',
+      onDrift: () => triggerDrift(),
+      onRefocus: () => triggerRefocus()
+    })
+  } catch (err) {
+    console.warn('[monitors] app monitor failed:', err.message)
+  }
 })
 
-ipcMain.handle('refocus-detected', () => {
-  if (driftCount > 0) {
-    new Notification({ title: 'Glorb Timer', body: 'Focus regained.' }).show()
-  }
-  driftCount = 0
-  clearAllTimers()
+ipcMain.handle('stop-monitors', () => {
+  appMonitor.stop()
+  stopDetectorWindow()
+  triggerRefocus()
 })

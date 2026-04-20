@@ -458,6 +458,15 @@ app.whenReady().then(async () => {
   if (!onboardingComplete) {
     createOnboardingWindow()
   }
+
+  // Prime notification permission on first launch
+  console.log('[notif] Notification.isSupported():', Notification.isSupported())
+  if (!store.get('notifPermRequested', false)) {
+    store.set('notifPermRequested', true)
+    if (Notification.isSupported()) {
+      new Notification({ title: 'Glorb Timer', body: 'Notifications active.' }).show()
+    }
+  }
 })
 
 app.on('window-all-closed', (e) => {
@@ -544,12 +553,26 @@ ipcMain.handle('start-monitors', async (event, { task, cameraDeviceId }) => {
   }
 })
 
-ipcMain.handle('list-applications', () => {
+ipcMain.handle('list-applications', async () => {
   try {
-    return fs.readdirSync('/Applications')
+    const names = fs.readdirSync('/Applications')
       .filter(f => f.endsWith('.app'))
       .map(f => f.replace(/\.app$/, ''))
       .sort()
+    const results = await Promise.all(
+      names.map(async name => {
+        try {
+          const icon = await app.getFileIcon(
+            `/Applications/${name}.app`,
+            { size: 'normal' }
+          )
+          return { name, iconDataUrl: icon.toDataURL() }
+        } catch {
+          return { name, iconDataUrl: '' }
+        }
+      })
+    )
+    return results
   } catch { return [] }
 })
 

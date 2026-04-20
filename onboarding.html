@@ -329,20 +329,33 @@
         grid.innerHTML = '<p class="text-muted">No apps found in /Applications.</p>'
         return
       }
-      apps.forEach(appName => {
-        const chip = document.createElement('button')
-        chip.className = 'app-chip'
-        chip.textContent = appName
-        chip.type = 'button'
-        chip.addEventListener('click', () => {
-          const active = chip.classList.toggle('selected')
+      apps.forEach(appObj => {
+        const { name, iconDataUrl } = appObj
+        const card = document.createElement('button')
+        card.className = 'app-card'
+        card.type = 'button'
+
+        const img = document.createElement('img')
+        img.src = iconDataUrl
+        img.alt = name
+        img.className = 'app-card-icon'
+
+        const label = document.createElement('span')
+        label.className = 'app-card-name'
+        label.textContent = name
+
+        card.appendChild(img)
+        card.appendChild(label)
+
+        card.addEventListener('click', () => {
+          const active = card.classList.toggle('selected')
           if (active) {
-            selectedWhitelistApps.add(appName)
+            selectedWhitelistApps.add(name)
           } else {
-            selectedWhitelistApps.delete(appName)
+            selectedWhitelistApps.delete(name)
           }
         })
-        grid.appendChild(chip)
+        grid.appendChild(card)
       })
     } catch (err) {
       grid.innerHTML = '<p class="text-muted">Could not load applications.</p>'

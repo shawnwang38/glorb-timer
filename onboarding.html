@@ -79,7 +79,19 @@
       </div>
     </div>
 
-    <!-- Screen 5: Completion -->
+    <!-- Screen 5: App Whitelist -->
+    <div class="screen" id="screen-whitelist">
+      <div class="whitelist-content">
+        <h2 class="text-heading text-center whitelist-heading">Glorb learns what's relevant for your task.<br>Which apps should always be allowed?</h2>
+        <p class="text-body text-muted text-center whitelist-subtext">Select any apps you always want Glorb to permit, regardless of your current task.</p>
+        <div class="app-chip-grid" id="app-chip-grid">
+          <p class="text-muted" id="app-chip-loading">Loading apps…</p>
+        </div>
+        <button class="btn-primary whitelist-cta" id="btn-whitelist-continue">Continue</button>
+      </div>
+    </div>
+
+    <!-- Screen 6: Completion -->
     <div class="screen" id="screen-completion">
       <div class="completion-content">
         <p class="text-display text-center completion-message" id="completion-message">Thanks, let's focus!</p>
@@ -126,6 +138,7 @@
     name:       document.getElementById('screen-name'),
     intro:      document.getElementById('screen-intro'),
     question:   document.getElementById('screen-question'),
+    whitelist:  document.getElementById('screen-whitelist'),
     completion: document.getElementById('screen-completion')
   }
   const onbGlorbImg    = document.getElementById('onb-glorb-img')
@@ -298,13 +311,51 @@
     const displayName = userName === 'You' ? '' : userName + ', '
     completionMsg.textContent = 'Thanks ' + displayName + 'let\'s focus!'
 
-    showScreen('completion')
+    loadWhitelistScreen()
+    showScreen('whitelist')
+  }
 
-    // Auto-dismiss after 1800ms
+  // ── Screen 5: App Whitelist ──────────────────────────────────────────────────
+  let selectedWhitelistApps = new Set()
+
+  async function loadWhitelistScreen() {
+    const grid = document.getElementById('app-chip-grid')
+    grid.innerHTML = '<p class="text-muted" id="app-chip-loading">Loading apps…</p>'
+    selectedWhitelistApps = new Set()
+    try {
+      const apps = await window.glorb.listApplications()
+      grid.innerHTML = ''
+      if (!apps || apps.length === 0) {
+        grid.innerHTML = '<p class="text-muted">No apps found in /Applications.</p>'
+        return
+      }
+      apps.forEach(appName => {
+        const chip = document.createElement('button')
+        chip.className = 'app-chip'
+        chip.textContent = appName
+        chip.type = 'button'
+        chip.addEventListener('click', () => {
+          const active = chip.classList.toggle('selected')
+          if (active) {
+            selectedWhitelistApps.add(appName)
+          } else {
+            selectedWhitelistApps.delete(appName)
+          }
+        })
+        grid.appendChild(chip)
+      })
+    } catch (err) {
+      grid.innerHTML = '<p class="text-muted">Could not load applications.</p>'
+    }
+  }
+
+  document.getElementById('btn-whitelist-continue').addEventListener('click', async () => {
+    await window.glorb.storeSet('userWhitelistApps', [...selectedWhitelistApps])
+    showScreen('completion')
     setTimeout(() => {
       window.glorb.closeOnboarding()
     }, 1800)
-  }
+  })
   </script>
 </body>
 </html>

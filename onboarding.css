@@ -228,3 +228,41 @@ body.dark .btn-back:hover { color: #c0c0c8; }
 
 .completion-message  { }
 .completion-subtext  { margin-top: 16px; }
+
+/* === Screen 5: App Whitelist Layout === */
+.whitelist-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 32px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.whitelist-heading { margin-bottom: 0; max-width: 480px; }
+.app-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  max-height: 55vh;
+  overflow-y: auto;
+  width: 100%;
+  padding: 8px;
+}
+.app-chip {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border, #ccc);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.app-chip:hover { border-color: #FF6B35; color: #FF6B35; }
+.app-chip.selected { background: #FF6B35; border-color: #FF6B35; color: #fff; }
+.dark .app-chip { color: #f0f0f0; border-color: #555; }
+.dark .app-chip:hover { border-color: #FF6B35; color: #FF6B35; }
+.dark .app-chip.selected { background: #FF6B35; border-color: #FF6B35; color: #fff; }
+.whitelist-cta { margin-top: 8px; }

@@ -134,30 +134,27 @@ function runWeakRegular () {
 }
 
 function runWeakADHD () {
-  // Step 1 — 10s: push notif + 1 note
   trackTimeout(() => {
     new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
-    playNotes(1)
+    playSound(SND.chime)
 
     let pingCount = 1
 
-    // Steps 2-up — every 5s up to 5 pings total with increasing notes
     const interval = trackInterval(() => {
       pingCount++
       if (pingCount <= 5) {
-        playNotes(pingCount)
+        for (let i = 0; i < pingCount; i++) {
+          trackTimeout(() => playSound(SND.chime), i * 400)
+        }
         if (pingCount === 5) {
-          // After 5th ping, stop interval and start constant chime for 10s
           clearInterval(interval)
           const idx = escalationTimers.indexOf(interval)
           if (idx !== -1) escalationTimers.splice(idx, 1)
-          // D-02: rapid repeated afplay loop for 10s constant chiming
           const chimeIntervalMs = 600
           const chimeCount = Math.floor(10000 / chimeIntervalMs)
           for (let i = 0; i < chimeCount; i++) {
-            trackTimeout(() => playSound(SND.note1), i * chimeIntervalMs)
+            trackTimeout(() => playSound(SND.chime), i * chimeIntervalMs)
           }
-          // terminate after 10s constant chime
           trackTimeout(() => weakTerminate('You lost focus.'), 10000)
         }
       }
@@ -255,18 +252,18 @@ function runStrongRegular () {
 }
 
 function runStrongADHD () {
-  // Step 1 — 10s: push notif + 1 note
   trackTimeout(() => {
     new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
-    playNotes(1)
+    playSound(SND.chime)
 
     let pingCount = 1
 
-    // Steps 2 — every 5s up to 5 pings with increasing notes
     const interval = trackInterval(() => {
       pingCount++
       if (pingCount <= 5) {
-        playNotes(pingCount)
+        for (let i = 0; i < pingCount; i++) {
+          trackTimeout(() => playSound(SND.chime), i * 400)
+        }
         if (pingCount === 5) {
           clearInterval(interval)
           const idx = escalationTimers.indexOf(interval)

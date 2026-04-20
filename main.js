@@ -34,6 +34,7 @@ let onboardingWin = null
 let detectorWin = null
 
 function triggerDrift () {
+  if (store.get('detectionMode', 'none') === 'none') return
   driftCount++
   const strength = store.get('strength', 'weak')
   const hasADHD = store.get('hasADHD', false)
@@ -42,7 +43,7 @@ function triggerDrift () {
 
 function triggerRefocus () {
   if (driftCount > 0) {
-    new Notification({ title: 'Glorb Timer', body: 'Focus regained.' }).show()
+    showNotification('Glorb Timer', 'Focus regained.')
   }
   driftCount = 0
   clearAllTimers()
@@ -106,7 +107,7 @@ function weakTerminate (message) {
 function runWeakRegular () {
   // Step 1 — 30s: push "Stay focused!" + 1 chime
   trackTimeout(() => {
-    new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
+    showNotification('Glorb Timer', 'Stay focused!')
     playSound(SND.chime)
 
     let pingCount = 1  // first ping already fired above
@@ -121,7 +122,7 @@ function runWeakRegular () {
         playSound(SND.chime)
         trackTimeout(() => playSound(SND.chime), 400)
         trackTimeout(() => playSound(SND.chime), 800)
-        new Notification({ title: 'Glorb Timer', body: 'Last reminder — Stay focused!' }).show()
+        showNotification('Glorb Timer', 'Last reminder — Stay focused!')
         // Step 4 — terminate after 3rd ping fires
         clearInterval(interval)
         // Remove from escalationTimers so clearAllTimers won't double-clear
@@ -135,7 +136,7 @@ function runWeakRegular () {
 
 function runWeakADHD () {
   trackTimeout(() => {
-    new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
+    showNotification('Glorb Timer', 'Stay focused!')
     playSound(SND.chime)
 
     let pingCount = 1
@@ -192,6 +193,20 @@ function createOverlayWindow (htmlFile, durationMs) {
   return overlayWin
 }
 
+// D-audio: fade-out only, no restore (intentional)
+function showNotification (title, body) {
+  if (!Notification.isSupported()) {
+    console.warn('[notif] Notification.isSupported() false — skipping:', title, body)
+    return
+  }
+  try {
+    new Notification({ title, body }).show()
+    console.log('[notif] shown:', title, body)
+  } catch (err) {
+    console.error('[notif] error showing notification:', err.message)
+  }
+}
+
 function fadeAudioOver30s () {
   // D-03: fade system volume to 0 over 30s using osascript in 10 steps of 3s each
   const steps = 10
@@ -207,7 +222,7 @@ function fadeAudioOver30s () {
 function runStrongRegular () {
   // Step 1 — 15s: push "Stay focused!" + 1 chime
   trackTimeout(() => {
-    new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
+    showNotification('Glorb Timer', 'Stay focused!')
     playSound(SND.chime)
 
     let pingCount = 1
@@ -222,7 +237,7 @@ function runStrongRegular () {
         playSound(SND.chime)
         trackTimeout(() => playSound(SND.chime), 400)
         trackTimeout(() => playSound(SND.chime), 800)
-        new Notification({ title: 'Glorb Timer', body: 'Last reminder — Stay focused!' }).show()
+        showNotification('Glorb Timer', 'Last reminder — Stay focused!')
         clearInterval(interval)
         const idx = escalationTimers.indexOf(interval)
         if (idx !== -1) escalationTimers.splice(idx, 1)
@@ -253,7 +268,7 @@ function runStrongRegular () {
 
 function runStrongADHD () {
   trackTimeout(() => {
-    new Notification({ title: 'Glorb Timer', body: 'Stay focused!' }).show()
+    showNotification('Glorb Timer', 'Stay focused!')
     playSound(SND.chime)
 
     let pingCount = 1
@@ -413,7 +428,7 @@ function startSocketServer () {
           socket.write('ok\n')
         } else if (cmd === 'refocus') {
           if (driftCount > 0) {
-            new Notification({ title: 'Glorb Timer', body: 'Focus regained.' }).show()
+            showNotification('Glorb Timer', 'Focus regained.')
           }
           driftCount = 0
           clearAllTimers()
@@ -491,7 +506,7 @@ ipcMain.handle('store-get', (event, key, defaultVal) => store.get(key, defaultVa
 ipcMain.handle('store-set', (event, key, value) => { store.set(key, value) })
 
 ipcMain.handle('notify', (event, { title, body }) => {
-  new Notification({ title, body }).show()
+  showNotification(title, body)
 })
 
 // Phase 7 — ONBOARD-01/06: onboarding window lifecycle
@@ -532,21 +547,28 @@ ipcMain.handle('camera-refocus', () => triggerRefocus())
 
 // Quick-260419-d21: monitor lifecycle (from timer UI)
 ipcMain.handle('start-monitors', async (event, { task, cameraDeviceId }) => {
+  const detectionMode = store.get('detectionMode', 'none')
   const userWhitelistApps = store.get('userWhitelistApps', [])
-  try {
-    createDetectorWindow(cameraDeviceId || '')
-  } catch (err) {
-    console.warn('[monitors] camera detector failed:', err.message)
-  }
-  try {
-    await appMonitor.start({
-      task: task || '',
-      userWhitelist: userWhitelistApps,
-      onDrift: () => triggerDrift(),
-      onRefocus: () => triggerRefocus()
-    })
-  } catch (err) {
-    console.warn('[monitors] app monitor failed:', err.message)
+  if (detectionMode === 'app' || detectionMode === 'camera') {
+    try {
+      if (detectionMode === 'camera') createDetectorWindow(cameraDeviceId || '')
+    } catch (err) {
+      console.warn('[monitors] camera detector failed:', err.message)
+    }
+    try {
+      if (detectionMode === 'app') {
+        await appMonitor.start({
+          task: task || '',
+          userWhitelist: userWhitelistApps,
+          onDrift: () => triggerDrift(),
+          onRefocus: () => triggerRefocus()
+        })
+      }
+    } catch (err) {
+      console.warn('[monitors] app monitor failed:', err.message)
+    }
+  } else {
+    console.log('[monitors] detectionMode=none — monitors not started')
   }
 })
 

@@ -109,10 +109,9 @@
       <!-- Time display -->
       <div id="time-display"><span class="time-nums">25</span>m <span class="time-nums">00</span>s</div>
 
-      <!-- Task input + camera selection (quick-260419-d21) -->
+      <!-- Task input -->
       <div id="focus-controls">
         <input id="task-input" type="text" maxlength="120" placeholder="What are you focusing on?" autocomplete="off" spellcheck="false">
-        <select id="camera-select" aria-label="Camera"></select>
       </div>
 
       <!-- Start / Pause / Resume button -->
@@ -132,6 +131,16 @@
         <div id="strength-buttons" role="group" aria-label="Focus strength">
           <button class="strength-btn active" data-strength="weak">Weak</button>
           <button class="strength-btn" data-strength="strong">Strong</button>
+        </div>
+      </div>
+
+      <!-- Detection section -->
+      <div id="detection-selector">
+        <p class="settings-label">Detection</p>
+        <div id="detection-buttons" role="group" aria-label="Detection mode">
+          <button class="strength-btn" data-detection="none">None</button>
+          <button class="strength-btn" data-detection="app">App</button>
+          <button class="strength-btn disabled" data-detection="camera" disabled title="Camera unavailable">Camera</button>
         </div>
       </div>
 
@@ -239,65 +248,22 @@
       // Calls are idempotent; safe even when no session was running.
       if (window.glorb && window.glorb.stopMonitors) window.glorb.stopMonitors()
       const tInput = document.getElementById('task-input')
-      const cSelect = document.getElementById('camera-select')
       const fCtrls = document.getElementById('focus-controls')
       if (tInput) tInput.disabled = false
-      if (cSelect) cSelect.disabled = false
       if (fCtrls) fCtrls.classList.remove('disabled')
     }
 
-    // === Quick-260419-d21: task input + camera selection ===
+    // === Task input ===
     const taskInput = document.getElementById('task-input')
-    const cameraSelect = document.getElementById('camera-select')
     const focusControls = document.getElementById('focus-controls')
-
-    async function populateCameras () {
-      try {
-        // Prime getUserMedia so labels are populated on macOS.
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-        stream.getTracks().forEach(t => t.stop())
-      } catch (_) {}
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices()
-        const cams = devices.filter(d => d.kind === 'videoinput')
-        cameraSelect.innerHTML = ''
-        if (cams.length === 0) {
-          const opt = document.createElement('option')
-          opt.value = ''
-          opt.textContent = 'No camera found'
-          cameraSelect.appendChild(opt)
-          cameraSelect.disabled = true
-          return
-        }
-        cams.forEach((d, i) => {
-          const opt = document.createElement('option')
-          opt.value = d.deviceId
-          opt.textContent = d.label || `Camera ${i + 1}`
-          cameraSelect.appendChild(opt)
-        })
-        const saved = await window.glorb.storeGet('cameraDeviceId', '')
-        if (saved && [...cameraSelect.options].some(o => o.value === saved)) {
-          cameraSelect.value = saved
-        }
-      } catch (err) {
-        console.warn('[ui] enumerateDevices failed:', err.message)
-      }
-    }
-
-    cameraSelect.addEventListener('change', () => {
-      window.glorb.storeSet('cameraDeviceId', cameraSelect.value)
-    })
 
     window.glorb.storeGet('lastTask', '').then(t => { if (t) taskInput.value = t })
     taskInput.addEventListener('input', () => {
       window.glorb.storeSet('lastTask', taskInput.value)
     })
 
-    populateCameras()
-
     function setFocusControlsDisabled (disabled) {
       taskInput.disabled = disabled
-      cameraSelect.disabled = disabled
       focusControls.classList.toggle('disabled', disabled)
     }
 
@@ -309,7 +275,7 @@
         btnStart.textContent = 'Unfocus'
         intervalId = setInterval(tick, 1000)
         setFocusControlsDisabled(true)
-        window.glorb.startMonitors(taskInput.value || '', cameraSelect.value || '')
+        window.glorb.startMonitors(taskInput.value || '', '')
         syncHandleVisibility()
       } else if (timerState === 'running') {
         const elapsed = Math.round((Date.now() - sessionStartTime) / 1000)
@@ -485,6 +451,25 @@
         window.glorb.storeSet('strength', val)
       })
     })
+    // --- Detection buttons ---
+    const detectionBtns = document.querySelectorAll('.strength-btn[data-detection]')
+    detectionBtns.forEach(btn => {
+      if (btn.disabled) return
+      btn.addEventListener('click', () => {
+        detectionBtns.forEach(b => b.classList.remove('active'))
+        btn.classList.add('active')
+        const val = btn.dataset.detection
+        window.glorb.storeSet('detectionMode', val)
+      })
+    })
+
+    // Restore saved detection mode on load
+    window.glorb.storeGet('detectionMode', 'none').then(savedMode => {
+      detectionBtns.forEach(b => b.classList.remove('active'))
+      const target = document.querySelector(`.strength-btn[data-detection="${savedMode}"]`)
+      if (target && !target.disabled) target.classList.add('active')
+    })
+
     document.getElementById('btn-retake').addEventListener('click', () => window.glorb.openOnboarding())
 
     // Restore saved strength on load

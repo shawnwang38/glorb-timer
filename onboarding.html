@@ -5,6 +5,80 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
   <title>Glorb Timer — Getting Started</title>
   <link rel="stylesheet" href="onboarding.css">
+  <style>
+    .detection-mode-content, .ollama-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 600px;
+      padding: 40px 24px;
+    }
+    .detection-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .detection-option {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding: 18px 24px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(0,0,0,0.15);
+      background: rgba(255,255,255,0.06);
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .detection-option:not(.disabled):hover {
+      border-color: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.05);
+    }
+    .detection-option.disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+    .detection-option.selected {
+      border-color: #FF6B35;
+      background: rgba(255,107,53,0.08);
+    }
+    .det-option-label {
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .det-option-sub {
+      font-size: 13px;
+      opacity: 0.7;
+    }
+    .btn-secondary {
+      padding: 12px 28px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(0,0,0,0.2);
+      background: transparent;
+      font-family: inherit;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    body.dark .detection-option {
+      border-color: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04);
+    }
+    body.dark .detection-option:not(.disabled):hover {
+      border-color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.08);
+    }
+    body.dark .btn-secondary {
+      border-color: rgba(255,255,255,0.2);
+      color: #f0f0f0;
+    }
+  </style>
 </head>
 <body>
   <div id="onboarding-app">
@@ -79,6 +153,40 @@
       </div>
     </div>
 
+    <!-- Screen 5a: Detection Mode -->
+    <div class="screen" id="screen-detection-mode">
+      <div class="detection-mode-content">
+        <h2 class="text-heading text-center" style="margin-bottom:32px;">How should Glorb help you focus?</h2>
+        <div class="detection-options" id="detection-options">
+          <button class="detection-option disabled" id="det-camera" disabled>
+            <span class="det-option-label">Camera</span>
+            <span class="det-option-sub">Requires Glorb hardware</span>
+          </button>
+          <button class="detection-option" id="det-app">
+            <span class="det-option-label">App</span>
+            <span class="det-option-sub">Detects when you're on unrelated apps.</span>
+          </button>
+          <button class="detection-option" id="det-none">
+            <span class="det-option-label">None</span>
+            <span class="det-option-sub">Timer functionality only.</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5b: Ollama Install Prompt -->
+    <div class="screen" id="screen-ollama">
+      <div class="ollama-content">
+        <h2 class="text-heading text-center" style="margin-bottom:16px;">Glorb uses a local AI model to detect what apps are relevant for your task. Install now?</h2>
+        <p class="text-body text-muted text-center" style="margin-bottom:32px;">Your computer should have 16GB of RAM to comfortably run this. 8GB minimum.</p>
+        <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn-primary" id="btn-ollama-yes">Yes, install</button>
+          <button class="btn-secondary" id="btn-ollama-skip">Skip for now</button>
+        </div>
+        <p class="text-muted text-center" id="ollama-status" style="margin-top:20px; font-size:13px; min-height:20px;"></p>
+      </div>
+    </div>
+
     <!-- Screen 5: App Whitelist -->
     <div class="screen" id="screen-whitelist">
       <div class="whitelist-content">
@@ -126,7 +234,7 @@
   ]
 
   // ── State ───────────────────────────────────────────────────────────────────
-  let currentScreen = 'greeting'   // 'greeting' | 'name' | 'intro' | 'question' | 'completion'
+  let currentScreen = 'greeting'   // 'greeting' | 'name' | 'intro' | 'question' | 'detection-mode' | 'ollama' | 'whitelist' | 'completion'
   let currentQuestion = 0          // 0-indexed, 0–17
   let answers = new Array(18).fill(-1)  // -1 = unanswered; 0–4 = dot index
   let userName = ''
@@ -134,12 +242,14 @@
 
   // ── DOM refs ────────────────────────────────────────────────────────────────
   const screens = {
-    greeting:   document.getElementById('screen-greeting'),
-    name:       document.getElementById('screen-name'),
-    intro:      document.getElementById('screen-intro'),
-    question:   document.getElementById('screen-question'),
-    whitelist:  document.getElementById('screen-whitelist'),
-    completion: document.getElementById('screen-completion')
+    greeting:         document.getElementById('screen-greeting'),
+    name:             document.getElementById('screen-name'),
+    intro:            document.getElementById('screen-intro'),
+    question:         document.getElementById('screen-question'),
+    'detection-mode': document.getElementById('screen-detection-mode'),
+    ollama:           document.getElementById('screen-ollama'),
+    whitelist:        document.getElementById('screen-whitelist'),
+    completion:       document.getElementById('screen-completion')
   }
   const onbGlorbImg    = document.getElementById('onb-glorb-img')
   const btnGetStarted  = document.getElementById('btn-get-started')
@@ -311,6 +421,39 @@
     const displayName = userName === 'You' ? '' : userName + ', '
     completionMsg.textContent = 'Thanks ' + displayName + 'let\'s focus!'
 
+    showScreen('detection-mode')
+  }
+
+  // ── Detection mode selection ──────────────────────────────────────────────────
+  let detectionMode = 'none'  // 'camera' | 'app' | 'none'
+
+  document.getElementById('det-app').addEventListener('click', () => {
+    detectionMode = 'app'
+    showScreen('ollama')
+  })
+  document.getElementById('det-none').addEventListener('click', async () => {
+    detectionMode = 'none'
+    await window.glorb.storeSet('detectionMode', 'none')
+    showScreen('completion')
+    setTimeout(() => window.glorb.closeOnboarding(), 1800)
+  })
+  // Camera button is disabled (greyed), no click handler needed
+
+  // ── Ollama install screen ─────────────────────────────────────────────────────
+  let ollamaYesClicked = false
+  document.getElementById('btn-ollama-yes').addEventListener('click', async () => {
+    if (!ollamaYesClicked) {
+      ollamaYesClicked = true
+      const status = document.getElementById('ollama-status')
+      status.textContent = 'Visit ollama.ai to install Ollama, then return here and click Continue.'
+      document.getElementById('btn-ollama-yes').textContent = 'Continue'
+    } else {
+      proceedToWhitelist()
+    }
+  })
+  document.getElementById('btn-ollama-skip').addEventListener('click', () => proceedToWhitelist())
+  function proceedToWhitelist () {
+    window.glorb.storeSet('detectionMode', 'app')
     loadWhitelistScreen()
     showScreen('whitelist')
   }
@@ -329,7 +472,9 @@
         grid.innerHTML = '<p class="text-muted">No apps found in /Applications.</p>'
         return
       }
-      apps.forEach(appObj => {
+      const ALWAYS_EXCLUDED = ['glorb timer', 'glorb', 'finder']
+      const filtered = apps.filter(a => !ALWAYS_EXCLUDED.includes(a.name.toLowerCase()))
+      filtered.forEach(appObj => {
         const { name, iconDataUrl } = appObj
         const card = document.createElement('button')
         card.className = 'app-card'

@@ -62,11 +62,12 @@ function stop () {
 }
 
 // Start the app monitor. onDrift/onRefocus are edge-triggered callbacks.
-async function start ({ task, onDrift, onRefocus, intervalMs = 2000 }) {
+async function start ({ task, onDrift, onRefocus, intervalMs = 2000, userWhitelist = [] }) {
   stop()
   prevDrifted = false
 
   let whitelist = new Set(ALWAYS_ALLOWED)
+  userWhitelist.forEach((a) => whitelist.add(a))
 
   const lowIntent = LOW_INTENT.some((re) => re.test(task || ''))
   if (task && task.trim() && !lowIntent) {
@@ -74,7 +75,7 @@ async function start ({ task, onDrift, onRefocus, intervalMs = 2000 }) {
       const open = await getOpenApps()
       const llmApps = await classifyApps(task.trim(), open)
       llmApps.forEach((a) => whitelist.add(a))
-      console.log('[appMonitor] whitelist:', [...whitelist])
+      console.log('[appMonitor] whitelist (llm + user):', [...whitelist])
     } catch (err) {
       console.warn('[appMonitor] classify failed, using always-allowed only:', err.message)
     }

@@ -526,6 +526,7 @@ ipcMain.handle('camera-refocus', () => triggerRefocus())
 
 // Quick-260419-d21: monitor lifecycle (from timer UI)
 ipcMain.handle('start-monitors', async (event, { task, cameraDeviceId }) => {
+  const userWhitelistApps = store.get('userWhitelistApps', [])
   try {
     createDetectorWindow(cameraDeviceId || '')
   } catch (err) {
@@ -534,12 +535,22 @@ ipcMain.handle('start-monitors', async (event, { task, cameraDeviceId }) => {
   try {
     await appMonitor.start({
       task: task || '',
+      userWhitelist: userWhitelistApps,
       onDrift: () => triggerDrift(),
       onRefocus: () => triggerRefocus()
     })
   } catch (err) {
     console.warn('[monitors] app monitor failed:', err.message)
   }
+})
+
+ipcMain.handle('list-applications', () => {
+  try {
+    return fs.readdirSync('/Applications')
+      .filter(f => f.endsWith('.app'))
+      .map(f => f.replace(/\.app$/, ''))
+      .sort()
+  } catch { return [] }
 })
 
 ipcMain.handle('stop-monitors', () => {

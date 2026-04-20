@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+  <title>Glorb — Focus</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100vw; height: 100vh;
+      background: #0a0a0a;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #f0f0f0;
+      user-select: none; -webkit-user-select: none;
+    }
+    .content {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 28px;
+      text-align: center;
+    }
+    .glorb-img {
+      width: 140px; height: 140px; border-radius: 50%; object-fit: cover;
+      animation: breathe 3s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+    .focus-text {
+      font-size: 48px; font-weight: 700;
+      letter-spacing: 0.08em; color: #fff;
+    }
+    .hold-btn {
+      position: relative;
+      width: 220px; height: 52px;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+      font-size: 15px; font-family: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      margin-top: 16px;
+      outline: none;
+    }
+    .hold-btn-fill {
+      position: absolute; left: 0; top: 0;
+      height: 100%; width: 0%;
+      background: rgba(255,107,53,0.55);
+      transition: none;
+      border-radius: 6px;
+      pointer-events: none;
+    }
+    .hold-btn-label {
+      position: relative; z-index: 1;
+    }
+    .hold-btn:hover { border-color: rgba(255,255,255,0.5); }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <img class="glorb-img" src="glorb_light.png" alt="Glorb">
+    <p class="focus-text">Focus.</p>
+    <button class="hold-btn" id="hold-btn">
+      <div class="hold-btn-fill" id="hold-fill"></div>
+      <span class="hold-btn-label">Hold to continue</span>
+    </button>
+  </div>
+
+  <script>
+    const HOLD_DURATION = 5000
+    const btn = document.getElementById('hold-btn')
+    const fill = document.getElementById('hold-fill')
+    let startTime = null
+    let rafId = null
+
+    function startHold () {
+      startTime = Date.now()
+      tick()
+    }
+
+    function tick () {
+      const elapsed = Date.now() - startTime
+      const pct = Math.min(100, (elapsed / HOLD_DURATION) * 100)
+      fill.style.width = pct + '%'
+      if (pct >= 100) {
+        window.glorb.closeOverlay()
+        return
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+
+    function cancelHold () {
+      if (rafId) cancelAnimationFrame(rafId)
+      rafId = null
+      startTime = null
+      fill.style.width = '0%'
+    }
+
+    btn.addEventListener('mousedown', startHold)
+    btn.addEventListener('touchstart', startHold)
+    btn.addEventListener('mouseup', cancelHold)
+    btn.addEventListener('mouseleave', cancelHold)
+    btn.addEventListener('touchend', cancelHold)
+    btn.addEventListener('touchcancel', cancelHold)
+  </script>
+</body>
+</html>

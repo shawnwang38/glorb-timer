@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Glorb Flash</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.82);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .glorb-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 24px;
+    }
+    .glorb-img {
+      width: 160px; height: 160px; border-radius: 50%; object-fit: cover;
+      animation: pulse 0.9s ease-in-out infinite;
+    }
+    .flash-text {
+      color: rgba(255,255,255,0.85);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 28px; font-weight: 600; letter-spacing: 0.02em;
+      text-align: center;
+    }
+    @keyframes pulse {
+      0%   { transform: scale(1);    opacity: 1; }
+      50%  { transform: scale(1.12); opacity: 0.8; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glorb-wrap">
+    <img class="glorb-img" src="glorb_light.png" alt="Glorb">
+    <p class="flash-text">Still there?</p>
+  </div>
+</body>
+</html>

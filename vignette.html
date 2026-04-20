@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Glorb Vignette</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100vw; height: 100vh;
+      background: transparent;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .vignette {
+      position: fixed; inset: 0;
+      background: radial-gradient(
+        ellipse at center,
+        transparent 40%,
+        rgba(0,0,0,0.35) 65%,
+        rgba(0,0,0,0.72) 100%
+      );
+      pointer-events: none;
+      animation: vignetteIn 1.5s ease forwards;
+    }
+    @keyframes vignetteIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="vignette"></div>
+</body>
+</html>

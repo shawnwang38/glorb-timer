@@ -34,6 +34,7 @@ let onboardingWin = null
 let detectorWin = null
 
 function triggerDrift () {
+  if (store.get('detectionMode', 'none') === 'none') return
   driftCount++
   const strength = store.get('strength', 'weak')
   const hasADHD = store.get('hasADHD', false)
@@ -546,21 +547,28 @@ ipcMain.handle('camera-refocus', () => triggerRefocus())
 
 // Quick-260419-d21: monitor lifecycle (from timer UI)
 ipcMain.handle('start-monitors', async (event, { task, cameraDeviceId }) => {
+  const detectionMode = store.get('detectionMode', 'none')
   const userWhitelistApps = store.get('userWhitelistApps', [])
-  try {
-    createDetectorWindow(cameraDeviceId || '')
-  } catch (err) {
-    console.warn('[monitors] camera detector failed:', err.message)
-  }
-  try {
-    await appMonitor.start({
-      task: task || '',
-      userWhitelist: userWhitelistApps,
-      onDrift: () => triggerDrift(),
-      onRefocus: () => triggerRefocus()
-    })
-  } catch (err) {
-    console.warn('[monitors] app monitor failed:', err.message)
+  if (detectionMode === 'app' || detectionMode === 'camera') {
+    try {
+      if (detectionMode === 'camera') createDetectorWindow(cameraDeviceId || '')
+    } catch (err) {
+      console.warn('[monitors] camera detector failed:', err.message)
+    }
+    try {
+      if (detectionMode === 'app') {
+        await appMonitor.start({
+          task: task || '',
+          userWhitelist: userWhitelistApps,
+          onDrift: () => triggerDrift(),
+          onRefocus: () => triggerRefocus()
+        })
+      }
+    } catch (err) {
+      console.warn('[monitors] app monitor failed:', err.message)
+    }
+  } else {
+    console.log('[monitors] detectionMode=none — monitors not started')
   }
 })
 

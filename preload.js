@@ -16,7 +16,8 @@ contextBridge.exposeInMainWorld('glorb', {
   startMonitors: (task, cameraDeviceId) =>
     ipcRenderer.invoke('start-monitors', { task, cameraDeviceId }),
   stopMonitors: () => ipcRenderer.invoke('stop-monitors'),
-  listApplications: () => ipcRenderer.invoke('list-applications')
+  listApplications: () => ipcRenderer.invoke('list-applications'),
+  killSpotify: () => ipcRenderer.invoke('kill-spotify')
 })
 
 // Separate bridge for the hidden detector window

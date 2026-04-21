@@ -78,6 +78,13 @@
       border-color: rgba(255,255,255,0.2);
       color: #f0f0f0;
     }
+    body.dark .detection-mode-content {
+      color: #f0f0f0;
+    }
+    .detection-mode-content .det-option-label,
+    .detection-mode-content .det-option-sub {
+      color: inherit;
+    }
   </style>
 </head>
 <body>
@@ -156,15 +163,14 @@
     <!-- Screen 5a: Detection Mode -->
     <div class="screen" id="screen-detection-mode">
       <div class="detection-mode-content">
-        <h2 class="text-heading text-center" style="margin-bottom:32px;">How should Glorb help you focus?</h2>
         <div class="detection-options" id="detection-options">
           <button class="detection-option disabled" id="det-camera" disabled>
             <span class="det-option-label">Camera</span>
             <span class="det-option-sub">Requires Glorb hardware</span>
           </button>
-          <button class="detection-option" id="det-app">
+          <button class="detection-option disabled" id="det-app" disabled>
             <span class="det-option-label">App</span>
-            <span class="det-option-sub">Detects when you're on unrelated apps.</span>
+            <span class="det-option-sub">Not available</span>
           </button>
           <button class="detection-option" id="det-none">
             <span class="det-option-label">None</span>
@@ -422,15 +428,12 @@
     completionMsg.textContent = 'Thanks ' + displayName + 'let\'s focus!'
 
     showScreen('detection-mode')
+    setTimeout(() => { document.getElementById('det-none').click() }, 600)
   }
 
   // ── Detection mode selection ──────────────────────────────────────────────────
   let detectionMode = 'none'  // 'camera' | 'app' | 'none'
 
-  document.getElementById('det-app').addEventListener('click', () => {
-    detectionMode = 'app'
-    showScreen('ollama')
-  })
   document.getElementById('det-none').addEventListener('click', async () => {
     detectionMode = 'none'
     await window.glorb.storeSet('detectionMode', 'none')

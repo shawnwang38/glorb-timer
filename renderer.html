@@ -657,6 +657,12 @@
     }
     btnMusic.addEventListener('click', () => musicOpen ? closeMusic() : openMusic())
 
+    document.getElementById('app').addEventListener('click', (e) => {
+      if (musicOpen && !musicPanel.contains(e.target) && e.target !== btnMusic && !btnMusic.contains(e.target)) {
+        closeMusic()
+      }
+    })
+
     document.getElementById('btn-close-spotify').addEventListener('click', async () => {
       await window.glorb.killSpotify()
     })

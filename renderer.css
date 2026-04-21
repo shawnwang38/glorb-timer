@@ -402,6 +402,10 @@ body.dark #task-input::placeholder {
   margin-bottom: 20px;
 }
 
+#detection-selector {
+  margin-bottom: 20px;
+}
+
 #strength-buttons {
   display: flex;
   flex-direction: column;

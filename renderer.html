@@ -11,7 +11,7 @@
     #btn-music {
       position: absolute;
       top: 10px;
-      right: 36px;
+      right: 80px;
       width: 28px; height: 28px;
       background: none; border: none; cursor: pointer;
       color: inherit; display: flex; align-items: center; justify-content: center;
@@ -234,8 +234,8 @@
       <div id="detection-selector">
         <p class="settings-label">Detection</p>
         <div id="detection-buttons" role="group" aria-label="Detection mode">
-          <button class="strength-btn" data-detection="none">None</button>
-          <button class="strength-btn" data-detection="app">App</button>
+          <button class="strength-btn active" data-detection="none">None</button>
+          <button class="strength-btn disabled" data-detection="app" disabled title="App detection unavailable">App</button>
           <button class="strength-btn disabled" data-detection="camera" disabled title="Camera unavailable">Camera</button>
         </div>
       </div>

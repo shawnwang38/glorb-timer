@@ -6,6 +6,61 @@
   <meta name="viewport" content="width=220, initial-scale=1.0">
   <title>Glorb Timer</title>
   <link rel="stylesheet" href="renderer.css">
+  <style>
+    /* Music button */
+    #btn-music {
+      position: absolute;
+      top: 10px;
+      right: 36px;
+      width: 28px; height: 28px;
+      background: none; border: none; cursor: pointer;
+      color: inherit; display: flex; align-items: center; justify-content: center;
+      padding: 0; border-radius: 4px;
+      opacity: 0.7;
+    }
+    #btn-music:hover { opacity: 1; }
+    #btn-music svg { width: 16px; height: 16px; }
+
+    /* Music panel */
+    #music-panel {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 180px;
+      background: var(--panel-bg, #f5f5f5);
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      padding: 40px 12px 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      overflow-y: auto;
+      z-index: 10;
+    }
+    body.dark #music-panel { background: #1e1e1e; }
+    #music-panel.open { transform: translateX(0); }
+
+    .music-action-btn {
+      width: 100%; padding: 8px; font-size: 12px; font-family: inherit;
+      border: 1px solid rgba(0,0,0,0.15); border-radius: 6px;
+      background: transparent; cursor: pointer; color: inherit;
+    }
+    body.dark .music-action-btn { border-color: rgba(255,255,255,0.2); }
+
+    .music-tracks { display: flex; flex-direction: column; gap: 6px; }
+    .music-track {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; gap: 6px;
+    }
+    .track-name { flex: 1; line-height: 1.3; }
+    .track-play {
+      width: 24px; height: 24px; flex-shrink: 0;
+      background: none; border: 1px solid rgba(0,0,0,0.15); border-radius: 50%;
+      cursor: pointer; font-size: 9px; color: inherit; display: flex; align-items: center; justify-content: center;
+    }
+    body.dark .track-play { border-color: rgba(255,255,255,0.2); }
+    .track-play.active { background: #FF6B35; color: #fff; border-color: #FF6B35; }
+
+    .music-volume { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
+    #music-vol { width: 100%; accent-color: #FF6B35; }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -46,6 +101,15 @@
         <g id="icon-moon" style="display:block;">
           <path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
+      </svg>
+    </button>
+
+    <!-- Music panel button -->
+    <button id="btn-music" aria-label="Open music panel">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="5" cy="12" r="2" stroke="currentColor" stroke-width="1.25"/>
+        <circle cx="11" cy="11" r="2" stroke="currentColor" stroke-width="1.25"/>
+        <polyline points="7,12 7,4 13,3 13,11" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
 
@@ -109,13 +173,45 @@
       <!-- Time display -->
       <div id="time-display"><span class="time-nums">25</span>m <span class="time-nums">00</span>s</div>
 
-      <!-- Task input -->
-      <div id="focus-controls">
-        <input id="task-input" type="text" maxlength="120" placeholder="What are you focusing on?" autocomplete="off" spellcheck="false">
-      </div>
-
       <!-- Start / Pause / Resume button -->
       <button id="btn-start">Focus</button>
+    </div>
+
+    <!-- Music panel -->
+    <div id="music-panel" aria-label="Music">
+      <button id="btn-close-spotify" class="music-action-btn">Close Spotify</button>
+
+      <div class="music-tracks">
+        <div class="music-track" data-track="white-noise">
+          <span class="track-name">White Noise</span>
+          <button class="track-play" aria-label="Play White Noise">&#9654;</button>
+        </div>
+        <div class="music-track" data-track="brown-noise">
+          <span class="track-name">Brown Noise</span>
+          <button class="track-play" aria-label="Play Brown Noise">&#9654;</button>
+        </div>
+        <div class="music-track" data-track="gamma">
+          <span class="track-name">Isochronic Gamma ~40Hz</span>
+          <button class="track-play" aria-label="Play Isochronic Gamma">&#9654;</button>
+        </div>
+        <div class="music-track" data-track="beta">
+          <span class="track-name">Isochronic Beta ~20Hz</span>
+          <button class="track-play" aria-label="Play Isochronic Beta">&#9654;</button>
+        </div>
+        <div class="music-track" data-track="beach">
+          <span class="track-name">Beach</span>
+          <button class="track-play" aria-label="Play Beach">&#9654;</button>
+        </div>
+        <div class="music-track" data-track="rainforest">
+          <span class="track-name">Rainforest</span>
+          <button class="track-play" aria-label="Play Rainforest">&#9654;</button>
+        </div>
+      </div>
+
+      <div class="music-volume">
+        <label for="music-vol">Volume</label>
+        <input id="music-vol" type="range" min="0" max="1" step="0.01" value="0.5">
+      </div>
     </div>
 
     <!-- Settings panel (Phase 3 — slides in from right) -->
@@ -244,27 +340,9 @@
         ringProgress.style.transition = 'stroke-dashoffset 1s linear'
       })
       syncHandleVisibility()
-      // Stop monitors + re-enable focus controls (quick-260419-d21).
+      // Stop monitors (quick-260419-d21).
       // Calls are idempotent; safe even when no session was running.
       if (window.glorb && window.glorb.stopMonitors) window.glorb.stopMonitors()
-      const tInput = document.getElementById('task-input')
-      const fCtrls = document.getElementById('focus-controls')
-      if (tInput) tInput.disabled = false
-      if (fCtrls) fCtrls.classList.remove('disabled')
-    }
-
-    // === Task input ===
-    const taskInput = document.getElementById('task-input')
-    const focusControls = document.getElementById('focus-controls')
-
-    window.glorb.storeGet('lastTask', '').then(t => { if (t) taskInput.value = t })
-    taskInput.addEventListener('input', () => {
-      window.glorb.storeSet('lastTask', taskInput.value)
-    })
-
-    function setFocusControlsDisabled (disabled) {
-      taskInput.disabled = disabled
-      focusControls.classList.toggle('disabled', disabled)
     }
 
     btnStart.addEventListener('click', () => {
@@ -274,14 +352,12 @@
         sessionStartTime = Date.now()
         btnStart.textContent = 'Unfocus'
         intervalId = setInterval(tick, 1000)
-        setFocusControlsDisabled(true)
-        window.glorb.startMonitors(taskInput.value || '', '')
+        window.glorb.startMonitors('', '')
         syncHandleVisibility()
       } else if (timerState === 'running') {
         const elapsed = Math.round((Date.now() - sessionStartTime) / 1000)
         addFocusTime(elapsed)
         window.glorb.stopMonitors()
-        setFocusControlsDisabled(false)
         resetTimer()
       }
     })
@@ -560,6 +636,148 @@
     window.glorb.onInterventionTerminate((data) => {
       if (typeof resetTimer === 'function') resetTimer()
       showInterventionPopup(data.message)
+    })
+
+    // === Music Panel ===
+    const btnMusic = document.getElementById('btn-music')
+    const musicPanel = document.getElementById('music-panel')
+    let musicOpen = false
+
+    function openMusic() {
+      musicOpen = true
+      musicPanel.classList.add('open')
+      btnMusic.setAttribute('aria-label', 'Close music panel')
+      if (settingsOpen) closeSettings()
+    }
+    function closeMusic() {
+      musicOpen = false
+      musicPanel.classList.remove('open')
+      btnMusic.setAttribute('aria-label', 'Open music panel')
+    }
+    btnMusic.addEventListener('click', () => musicOpen ? closeMusic() : openMusic())
+
+    document.getElementById('btn-close-spotify').addEventListener('click', async () => {
+      await window.glorb.killSpotify()
+    })
+
+    // Audio engine
+    let audioCtx = null
+    let activeTrackEl = null
+    let activeNode = null
+    let gainNode = null
+
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new AudioContext()
+      return audioCtx
+    }
+
+    function stopActive() {
+      if (activeNode) {
+        try {
+          if (activeNode.stop) activeNode.stop()
+          else if (activeNode.pause) { activeNode.pause(); activeNode.currentTime = 0 }
+        } catch(e) {}
+        activeNode = null
+      }
+      if (gainNode) { try { gainNode.disconnect() } catch(e) {} gainNode = null }
+      if (activeTrackEl) {
+        activeTrackEl.querySelector('.track-play').classList.remove('active')
+        activeTrackEl.querySelector('.track-play').innerHTML = '&#9654;'
+        activeTrackEl = null
+      }
+    }
+
+    function makeNoiseBuffer(ctx, type) {
+      const sampleRate = ctx.sampleRate
+      const bufLen = sampleRate * 2
+      const buf = ctx.createBuffer(1, bufLen, sampleRate)
+      const data = buf.getChannelData(0)
+      if (type === 'white') {
+        for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1
+      } else {
+        let last = 0
+        for (let i = 0; i < bufLen; i++) {
+          const w = Math.random() * 2 - 1
+          last = (last + 0.02 * w) / 1.02
+          data[i] = last * 3.5
+        }
+      }
+      return buf
+    }
+
+    function makeIsochronicBuffer(ctx, beatHz) {
+      const sampleRate = ctx.sampleRate
+      const duration = 4
+      const bufLen = Math.floor(sampleRate * duration)
+      const buf = ctx.createBuffer(1, bufLen, sampleRate)
+      const data = buf.getChannelData(0)
+      const carrier = 200
+      for (let i = 0; i < bufLen; i++) {
+        const t = i / sampleRate
+        const envelope = Math.sin(2 * Math.PI * beatHz * t) > 0 ? 1 : 0
+        data[i] = Math.sin(2 * Math.PI * carrier * t) * envelope * 0.5
+      }
+      return buf
+    }
+
+    function playBufferLoop(ctx, buf) {
+      gainNode = ctx.createGain()
+      gainNode.gain.value = parseFloat(document.getElementById('music-vol').value)
+      gainNode.connect(ctx.destination)
+      const src = ctx.createBufferSource()
+      src.buffer = buf
+      src.loop = true
+      src.connect(gainNode)
+      src.start()
+      return src
+    }
+
+    function playFileLoop(ctx, filePath) {
+      const audio = new Audio(filePath)
+      audio.loop = true
+      gainNode = ctx.createGain()
+      gainNode.gain.value = parseFloat(document.getElementById('music-vol').value)
+      gainNode.connect(ctx.destination)
+      const src = ctx.createMediaElementSource(audio)
+      src.connect(gainNode)
+      audio.play()
+      return audio
+    }
+
+    document.querySelectorAll('.music-track').forEach(trackEl => {
+      trackEl.querySelector('.track-play').addEventListener('click', () => {
+        const track = trackEl.dataset.track
+        const isActive = trackEl === activeTrackEl
+        stopActive()
+        if (isActive) return
+
+        const ctx = getAudioCtx()
+        if (ctx.state === 'suspended') ctx.resume()
+
+        let node
+        if (track === 'white-noise') {
+          node = playBufferLoop(ctx, makeNoiseBuffer(ctx, 'white'))
+        } else if (track === 'brown-noise') {
+          node = playBufferLoop(ctx, makeNoiseBuffer(ctx, 'brown'))
+        } else if (track === 'gamma') {
+          node = playBufferLoop(ctx, makeIsochronicBuffer(ctx, 40))
+        } else if (track === 'beta') {
+          node = playBufferLoop(ctx, makeIsochronicBuffer(ctx, 20))
+        } else if (track === 'beach') {
+          node = playFileLoop(ctx, 'sounds/beach.mp3')
+        } else if (track === 'rainforest') {
+          node = playFileLoop(ctx, 'sounds/rainforest.mp3')
+        }
+
+        activeNode = node
+        activeTrackEl = trackEl
+        trackEl.querySelector('.track-play').classList.add('active')
+        trackEl.querySelector('.track-play').innerHTML = '&#9646;&#9646;'
+      })
+    })
+
+    document.getElementById('music-vol').addEventListener('input', (e) => {
+      if (gainNode) gainNode.gain.value = parseFloat(e.target.value)
     })
   </script>
 </body>

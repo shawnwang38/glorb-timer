@@ -600,3 +600,10 @@ ipcMain.handle('stop-monitors', () => {
   stopDetectorWindow()
   triggerRefocus()
 })
+
+ipcMain.handle('kill-spotify', async () => {
+  const { execFile } = require('child_process')
+  return new Promise(resolve => {
+    execFile('killall', ['Spotify'], (err) => resolve(!err))
+  })
+})

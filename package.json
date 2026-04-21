@@ -1,6 +1,6 @@
 {
   "name": "glorb-timer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "macOS menu bar Pomodoro timer (software-only)",
   "main": "main.js",
   "scripts": {
@@ -34,7 +34,8 @@
       "build-icon.png",
       "glorb_light.png",
       "glorb_dark.png",
-      "glorb.png"
+      "glorb.png",
+      "sounds/**/*"
     ],
     "mac": {
       "category": "public.app-category.productivity",

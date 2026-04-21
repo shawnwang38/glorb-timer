@@ -173,11 +173,6 @@
       <!-- Time display -->
       <div id="time-display"><span class="time-nums">25</span>m <span class="time-nums">00</span>s</div>
 
-      <!-- Task input -->
-      <div id="focus-controls">
-        <input id="task-input" type="text" maxlength="120" placeholder="What are you focusing on?" autocomplete="off" spellcheck="false">
-      </div>
-
       <!-- Start / Pause / Resume button -->
       <button id="btn-start">Focus</button>
     </div>
@@ -345,27 +340,9 @@
         ringProgress.style.transition = 'stroke-dashoffset 1s linear'
       })
       syncHandleVisibility()
-      // Stop monitors + re-enable focus controls (quick-260419-d21).
+      // Stop monitors (quick-260419-d21).
       // Calls are idempotent; safe even when no session was running.
       if (window.glorb && window.glorb.stopMonitors) window.glorb.stopMonitors()
-      const tInput = document.getElementById('task-input')
-      const fCtrls = document.getElementById('focus-controls')
-      if (tInput) tInput.disabled = false
-      if (fCtrls) fCtrls.classList.remove('disabled')
-    }
-
-    // === Task input ===
-    const taskInput = document.getElementById('task-input')
-    const focusControls = document.getElementById('focus-controls')
-
-    window.glorb.storeGet('lastTask', '').then(t => { if (t) taskInput.value = t })
-    taskInput.addEventListener('input', () => {
-      window.glorb.storeSet('lastTask', taskInput.value)
-    })
-
-    function setFocusControlsDisabled (disabled) {
-      taskInput.disabled = disabled
-      focusControls.classList.toggle('disabled', disabled)
     }
 
     btnStart.addEventListener('click', () => {
@@ -375,14 +352,12 @@
         sessionStartTime = Date.now()
         btnStart.textContent = 'Unfocus'
         intervalId = setInterval(tick, 1000)
-        setFocusControlsDisabled(true)
-        window.glorb.startMonitors(taskInput.value || '', '')
+        window.glorb.startMonitors('', '')
         syncHandleVisibility()
       } else if (timerState === 'running') {
         const elapsed = Math.round((Date.now() - sessionStartTime) / 1000)
         addFocusTime(elapsed)
         window.glorb.stopMonitors()
-        setFocusControlsDisabled(false)
         resetTimer()
       }
     })
